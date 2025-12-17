@@ -1,0 +1,53 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+model Patient {
+  id        String   @id @default(uuid())
+  phone     String   @unique
+  name      String?
+  pushName  String?
+  metadata  Json?
+  tags      String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  interactions Interaction[]
+  appointments Appointment[]
+
+  @@map("patients")
+}
+
+model Interaction {
+  id        String   @id @default(uuid())
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id])
+  role      String // 'user' | 'assistant' | 'system'
+  content   String
+  mediaType String   @default("text") // 'text' | 'audio'
+  // embedding Unsupported("vector(1536)")? // Uncomment when extension is enabled in DB
+  createdAt DateTime @default(now())
+
+  @@map("interactions")
+}
+
+model Appointment {
+  id            String   @id @default(uuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id])
+  startTime     DateTime
+  endTime       DateTime
+  status        String   @default("scheduled") // 'scheduled', 'cancelled', 'completed'
+  googleEventId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("appointments")
+}

@@ -22,16 +22,12 @@ export class OutputService {
             // but Evolution V2 usually handles just numbers if formatted correctly.
             // Let's assume phone is clean number string.
 
+            // Simplified payload for Evolution API v1.x/v2.x compatibility
             const payload = {
                 number: phone,
-                options: {
-                    delay: 1200,
-                    presence: "composing",
-                    linkPreview: false
-                },
-                textMessage: {
-                    text: text
-                }
+                text: text,
+                delay: 1200,
+                linkPreview: false
             };
 
             const headers = {
@@ -39,14 +35,14 @@ export class OutputService {
                 'Content-Type': 'application/json'
             };
 
-            console.log(`[Output] Sending message to ${phone}...`);
+            console.log(`[Output] Sending message to ${phone}... Payload:`, JSON.stringify(payload));
             const response = await axios.post(url, payload, { headers });
 
             console.log(`[Output] Message sent successfully: ${response.data?.key?.id}`);
             return response.data;
 
         } catch (error: any) {
-            console.error('[Output] Error sending message via Evolution API:', error.response?.data || error.message);
+            console.error('[Output] Error sending message via Evolution API:', JSON.stringify(error.response?.data || error.message, null, 2));
             // Non-blocking error for main flow, but we log it.
             return null;
         }

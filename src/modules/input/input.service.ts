@@ -82,7 +82,18 @@ export class InputService {
 
         console.log(`[Input] Processed message for ${patient.phone}: "${textBody}"`);
 
-        // 4. Trigger Intelligence Core (Async)
-        IntelligenceService.handleInteraction(patient, textBody);
+        // 4. Router: Admin vs Lead
+        const adminPhone = process.env.ADMIN_WHATSAPP_NUMBER;
+
+        if (adminPhone && patient.phone === adminPhone) {
+            // Route to Manager AI (Analytics/CRM)
+            console.log(`[Input] Routing to Manager AI (Admin detected)`);
+            const { ManagerService } = await import('../intelligence/manager.service');
+            ManagerService.handleAdminQuery(patient, textBody);
+        } else {
+            // Route to Diana (Sales/Scheduling)
+            console.log(`[Input] Routing to Diana (Lead/Patient)`);
+            IntelligenceService.handleInteraction(patient, textBody);
+        }
     }
 }

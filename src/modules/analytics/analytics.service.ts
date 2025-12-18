@@ -1,57 +1,217 @@
 import prisma from '../../database/prisma';
-import openai from '../../config/openai';
 
 export class AnalyticsService {
 
-    static async askManager(query: string) {
+    /**
+     * 📊 TORRE DE CONTROL - Get business metrics with comparisons
+     */
+    static async getMetrics() {
         try {
-            // 1. Gather Metrics (Real-time)
-            const today = new Date();
-            const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+            const now = new Date();
+            const today = new Date(now.setHours(0, 0, 0, 0));
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
 
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+            // TODAY
             const appointmentsToday = await prisma.appointment.count({
-                where: { startTime: { gte: startOfDay } }
+                where: {
+                    startTime: { gte: today },
+                    status: { not: 'cancelled' }
+                }
             });
 
-            const newPatientsToday = await prisma.patient.count({
-                where: { createdAt: { gte: startOfDay } }
+            const leadsToday = await prisma.patient.count({
+                where: { createdAt: { gte: today } }
             });
 
-            const totalInteractions = await prisma.interaction.count({
-                where: { createdAt: { gte: startOfDay } }
+            // YESTERDAY
+            const appointmentsYesterday = await prisma.appointment.count({
+                where: {
+                    startTime: { gte: yesterday, lt: today },
+                    status: { not: 'cancelled' }
+                }
             });
 
-            // We can add more complex queries here or read from Materialized Views (if created)
+            const leadsYesterday = await prisma.patient.count({
+                where: {
+                    createdAt: { gte: yesterday, lt: today }
+                }
+            });
 
-            const contextData = {
-                date: new Date().toISOString(),
-                metrics: {
-                    appointmentsToday,
-                    newPatientsToday,
-                    totalInteractionsToday: totalInteractions
+            // THIS MONTH
+            const appointmentsThisMonth = await prisma.appointment.count({
+                where: {
+                    startTime: { gte: startOfMonth },
+                    status: { not: 'cancelled' }
+                }
+            });
+
+            const leadsThisMonth = await prisma.patient.count({
+                where: { createdAt: { gte: startOfMonth } }
+            });
+
+            // LAST MONTH
+            const appointmentsLastMonth = await prisma.appointment.count({
+                where: {
+                    startTime: { gte: startOfLastMonth, lte: endOfLastMonth },
+                    status: { not: 'cancelled' }
+                }
+            });
+
+            const leadsLastMonth = await prisma.patient.count({
+                where: {
+                    createdAt: { gte: startOfLastMonth, lte: endOfLastMonth }
+                }
+            });
+
+            return {
+                today: {
+                    appointments: appointmentsToday,
+                    leads: leadsToday
+                },
+                yesterday: {
+                    appointments: appointmentsYesterday,
+                    leads: leadsYesterday
+                },
+                thisMonth: {
+                    appointments: appointmentsThisMonth,
+                    leads: leadsThisMonth
+                },
+                lastMonth: {
+                    appointments: appointmentsLastMonth,
+                    leads: leadsLastMonth
                 }
             };
 
-            // 2. LLM Call
-            const systemPrompt = `
-Eres el "Manager AI" de Dr. Sonrisa.
-Tu trabajo es responder preguntas de negocio a los dueños de la clínica basándote en los datos.
-Responde de forma ejecutiva, breve y clara.
-Datos actuales: ${JSON.stringify(contextData)}
-      `;
+        } catch (error) {
+            console.error('[Analytics] Error getting metrics:', error);
+            throw error;
+        }
+    }
 
-            const completion = await openai.chat.completions.create({
-                model: 'gpt-4o', // Or gpt-3.5-turbo
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: query }
-                ]
+    /**
+     * 🔍 BUSCADOR CRM - Search patients by name or phone
+     */
+    static async searchPatient(query: string) {
+        try {
+            const patients = await prisma.patient.findMany({
+                where: {
+                    OR: [
+                        { phone: { contains: query } },
+                        { name: { contains: query, mode: 'insensitive' } }
+                    ]
+                },
+                include: {
+                    interactions: {
+                        orderBy: { createdAt: 'desc' },
+                        take: 1
+                    },
+                    appointments: {
+                        where: {
+                            startTime: { gte: new Date() },
+                            status: { not: 'cancelled' }
+                        },
+                        orderBy: { startTime: 'asc' },
+                        take: 1
+                    }
+                },
+                take: 5
             });
 
-            return completion.choices[0].message?.content;
+            return patients.map(p => ({
+                id: p.id,
+                name: p.name || 'Sin nombre',
+                phone: p.phone,
+                status: p.status,
+                followUpCount: p.followUpCount,
+                lastInteraction: p.interactions[0]?.createdAt || p.createdAt,
+                lastMessage: p.interactions[0]?.content?.substring(0, 50) || 'N/A',
+                nextAppointment: p.appointments[0]?.startTime || null
+            }));
+
         } catch (error) {
-            console.error('Error in Manager AI:', error);
-            throw new Error('Could not process analytics query');
+            console.error('[Analytics] Error searching patient:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 📅 GESTIÓN DE TIEMPO - Get upcoming appointments
+     */
+    static async getUpcomingAppointments(days: number = 7) {
+        try {
+            const now = new Date();
+            const futureDate = new Date();
+            futureDate.setDate(futureDate.getDate() + days);
+
+            const appointments = await prisma.appointment.findMany({
+                where: {
+                    startTime: { gte: now, lte: futureDate },
+                    status: { not: 'cancelled' }
+                },
+                include: {
+                    patient: {
+                        select: {
+                            name: true,
+                            phone: true
+                        }
+                    }
+                },
+                orderBy: { startTime: 'asc' },
+                take: 20
+            });
+
+            return appointments.map(apt => ({
+                id: apt.id,
+                startTime: apt.startTime,
+                patientName: apt.patient.name || 'Sin nombre',
+                patientPhone: apt.patient.phone,
+                status: apt.status
+            }));
+
+        } catch (error) {
+            console.error('[Analytics] Error getting appointments:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 🎯 RADAR DE ACTIVIDAD - Get recent interactions
+     */
+    static async getRecentActivity(limit: number = 10) {
+        try {
+            const interactions = await prisma.interaction.findMany({
+                where: {
+                    role: 'user' // Only user messages
+                },
+                include: {
+                    patient: {
+                        select: {
+                            name: true,
+                            phone: true,
+                            status: true
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'desc' },
+                take: limit
+            });
+
+            return interactions.map(i => ({
+                patientName: i.patient.name || 'Sin nombre',
+                patientPhone: i.patient.phone,
+                patientStatus: i.patient.status,
+                message: i.content.substring(0, 60),
+                timestamp: i.createdAt
+            }));
+
+        } catch (error) {
+            console.error('[Analytics] Error getting recent activity:', error);
+            throw error;
         }
     }
 }

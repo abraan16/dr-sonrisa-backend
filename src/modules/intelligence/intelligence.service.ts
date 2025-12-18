@@ -1,4 +1,10 @@
-import prisma from '../../database/prisma';
+import { OutputService } from '../output/output.service';
+
+// ... (previous imports)
+
+// 5. Send back to user (Via Output/WhatsApp Service)
+console.log(`[Diana] Response to ${patient.phone}: ${aiResponse}`);
+await OutputService.sendMessage(patient.phone, aiResponse);
 import openai from '../../config/openai';
 import { MemoryService } from './memory.service';
 import { SchedulerService } from '../scheduler/scheduler.service';
@@ -125,13 +131,9 @@ Datos del paciente: ${patient.name} (${patient.phone})
                 }
             });
 
-            // 5. Send back to user (Via Output/WhatsApp Service - needed)
-            // For now just log it
+            // 5. Send back to user
             console.log(`[Diana] Response to ${patient.phone}: ${aiResponse}`);
-
-            // We need a way to send this back to Evolution API.
-            // We should create an OutputService or similar.
-            // OutputService.sendMessage(patient.phone, aiResponse);
+            await OutputService.sendMessage(patient.phone, aiResponse);
 
             return aiResponse;
 

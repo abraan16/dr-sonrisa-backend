@@ -31,6 +31,7 @@ export class InputController {
                 remoteJid,
                 pushName,
                 messageType,
+                fromMe: data.key?.fromMe || false, // Detect if message is from receptionist
                 content: messageType === 'conversation' ? data.message?.conversation :
                     messageType === 'extendedTextMessage' ? data.message?.extendedTextMessage :
                         messageType === 'audioMessage' ? data.message?.audioMessage :

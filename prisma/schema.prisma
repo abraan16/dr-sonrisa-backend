@@ -25,6 +25,11 @@ model Patient {
   followUpCount       Int      @default(0)
   lastInteractionAt   DateTime @default(now())
 
+  // Human Handoff System
+  botStatus           String   @default("active") // "active" | "paused"
+  handoffAt           DateTime? // When human took over
+  lastHumanResponseAt DateTime? // Last time human responded
+
   interactions Interaction[]
   appointments Appointment[]
 

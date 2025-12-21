@@ -1,11 +1,13 @@
 import prisma from '../../database/prisma';
 import { AudioService } from './audio.service';
 import { IntelligenceService } from '../intelligence/intelligence.service';
+import { HandoffService } from '../handoff/handoff.service';
 
 interface MessageData {
     remoteJid: string;
     pushName: string;
     messageType: string;
+    fromMe: boolean; // Detect if message is from receptionist
     content: any; // content from Evolution API can be complex
 }
 
@@ -46,7 +48,7 @@ export class InputService {
     }
 
     static async processMessage(data: MessageData) {
-        const { remoteJid, pushName, messageType, content } = data;
+        const { remoteJid, pushName, messageType, content, fromMe } = data;
 
         // 1. Normalize Identity
         const patient = await this.findOrCreatePatient(remoteJid, pushName);
@@ -81,6 +83,20 @@ export class InputService {
         });
 
         console.log(`[Input] Processed message for ${patient.phone}: "${textBody}"`);
+
+        // 3.5. Handoff Detection: Check if this is a human response
+        if (fromMe) {
+            console.log(`[Input] Human response detected for ${patient.phone}. Pausing bot.`);
+            await HandoffService.pauseBotForPatient(patient.id);
+            return; // Don't process with AI
+        }
+
+        // 3.6. Check if bot is paused for this patient
+        const shouldPause = await HandoffService.shouldBotRemainPaused(patient.id);
+        if (shouldPause) {
+            console.log(`[Input] Bot is paused for ${patient.phone}. Skipping AI response.`);
+            return;
+        }
 
         // 4. Router: Admin vs Lead
         const adminPhone = process.env.ADMIN_WHATSAPP_NUMBER;

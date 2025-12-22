@@ -444,6 +444,42 @@ Sistema que detecta automáticamente cuando la recepcionista interviene manualme
 
 ---
 
+## 🏷️ Gestión Dinámica de Promociones (¡NUEVO!)
+
+### Descripción
+Ahora el administrador puede gestionar las promociones que Diana menciona a los pacientes directamente desde WhatsApp, sin tocar código ni hacer redeploys.
+
+### Cómo agregar una promoción
+El administrador solo debe escribir al WhatsApp con el mensaje de la promoción.
+
+**Ejemplos de comandos:**
+- "Agrega promoción: 10% de descuento en limpiezas desde hoy hasta el 31 de diciembre"
+- "Nueva promo: 20% OFF en blanqueamiento durante todo enero"
+- "Promo activa: 2x1 en consulta inicial para nuevos pacientes hasta el viernes"
+
+**Manager AI se encargará de:**
+1. Entender qué servicio es (limpieza, blanqueamiento, etc.)
+2. Extraer el descuento y la fecha de vencimiento.
+3. Guardarlo en la base de datos.
+4. Confirmarte: "✅ Promoción Guardada".
+
+### Cómo Diana usa las promociones
+Una vez guardada, Diana **automáticamente** empezará a mencionarla cuando un paciente pregunte por ese servicio.
+
+**Reglas de Diana:**
+- ✅ Solo menciona promociones que estén en su lista activa.
+- ✅ Verifica la fecha: si ya venció, deja de mencionarla sola.
+- ❌ **PROHIBIDO INVENTAR:** Si no hay promo para un servicio, Diana no inventará nada.
+
+### Comandos de Gestión
+
+| Acción | Envía este mensaje |
+|--------|---------------------|
+| Listar promociones | "Ver promociones activas" o "Qué promociones hay" |
+| Desactivar promo | "Desactiva promoción de blanqueamiento" |
+
+---
+
 ## ⚙️ Configuración y Variables de Entorno
 
 ### Variables Requeridas

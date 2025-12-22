@@ -12,6 +12,9 @@ ReactivationService.init();
 cron.schedule('*/30 * * * *', async () => {
     console.log('[Handoff] Running timeout check...');
     await HandoffService.checkTimeouts();
+
+    console.log('[Promotions] Checking for expired promotions...');
+    await PromotionService.deactivateExpired();
 }, {
     timezone: 'America/Santo_Domingo'
 });

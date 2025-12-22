@@ -3,6 +3,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { OutputService } from '../output/output.service';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { PromotionService } from '../promotions/promotion.service';
 
 export class ManagerService {
 
@@ -57,6 +58,24 @@ export class ManagerService {
                             properties: {
                                 limit: { type: 'number', description: 'Number of interactions to retrieve (default: 10)' }
                             }
+                        }
+                    }
+                },
+                {
+                    type: 'function',
+                    function: {
+                        name: 'manage_promotion',
+                        description: 'Add, list, or deactivate dental promotions',
+                        parameters: {
+                            type: 'object',
+                            properties: {
+                                action: { type: 'string', enum: ['add', 'list', 'deactivate'], description: 'Action to perform' },
+                                service: { type: 'string', description: 'Service name (e.g., blanqueamiento, limpieza)' },
+                                description: { type: 'string', description: 'Detailed promotion text' },
+                                discountText: { type: 'string', description: 'Short discount tag (e.g., 20% OFF)' },
+                                validUntil: { type: 'string', description: 'Expiration date (ISO format or YYYY-MM-DD)' }
+                            },
+                            required: ['action']
                         }
                     }
                 }
@@ -129,6 +148,24 @@ Analiza la pregunta del admin y usa la herramienta apropiada.
                     case 'get_recent_activity':
                         toolResult = await AnalyticsService.getRecentActivity(functionArgs.limit || 10);
                         finalResponse = this.formatRecentActivity(toolResult);
+                        break;
+
+                    case 'manage_promotion':
+                        if (functionArgs.action === 'add') {
+                            const promo = await PromotionService.upsertPromotion({
+                                service: functionArgs.service,
+                                description: functionArgs.description,
+                                discountText: functionArgs.discountText,
+                                validUntil: functionArgs.validUntil ? new Date(functionArgs.validUntil) : undefined
+                            });
+                            finalResponse = `✅ *Promoción Guardada*\n\nServicio: ${promo.service}\nDetalle: ${promo.description}\n${promo.validUntil ? `Vence: ${promo.validUntil.toLocaleDateString('es-DO')}` : ''}`;
+                        } else if (functionArgs.action === 'list') {
+                            const promos = await PromotionService.getActivePromotions();
+                            finalResponse = this.formatPromotionsList(promos);
+                        } else if (functionArgs.action === 'deactivate') {
+                            await PromotionService.deactivatePromotion(functionArgs.service);
+                            finalResponse = `✅ *Promoción Desactivada* para "${functionArgs.service}"`;
+                        }
                         break;
 
                     default:
@@ -237,6 +274,29 @@ Analiza la pregunta del admin y usa la herramienta apropiada.
             msg += `${idx + 1}. ${i.patientName} (${i.patientStatus})\n`;
             msg += `   "${i.message}..."\n`;
             msg += `   ${timeSince}\n\n`;
+        });
+
+        return msg.trim();
+    }
+
+    /**
+     * FORMAT PROMOTIONS LIST
+     */
+    private static formatPromotionsList(promos: any[]): string {
+        if (promos.length === 0) {
+            return `🏷️ No hay promociones activas en este momento.`;
+        }
+
+        let msg = `🏷️ *Promociones Activas*\n\n`;
+
+        promos.forEach((p, idx) => {
+            msg += `${idx + 1}. *${p.service.toUpperCase()}*\n`;
+            msg += `   ${p.description}\n`;
+            if (p.discountText) msg += `   Tag: ${p.discountText}\n`;
+            if (p.validUntil) {
+                msg += `   Vence: ${new Date(p.validUntil).toLocaleDateString('es-DO')}\n`;
+            }
+            msg += `\n`;
         });
 
         return msg.trim();

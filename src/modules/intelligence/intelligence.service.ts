@@ -3,6 +3,7 @@ import { OutputService } from '../output/output.service';
 import openai from '../../config/openai';
 import { MemoryService } from './memory.service';
 import { SchedulerService } from '../scheduler/scheduler.service';
+import { PromotionService } from '../promotions/promotion.service';
 
 export class IntelligenceService {
 
@@ -15,6 +16,12 @@ export class IntelligenceService {
             // 2. Prepare System Prompt (Diana Persona)
             const dateParams: Intl.DateTimeFormatOptions = { timeZone: 'America/Santo_Domingo', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true };
             const currentDate = new Date().toLocaleString('es-DO', dateParams);
+
+            // 1.5. Get Active Promotions
+            const activePromotions = await PromotionService.getActivePromotions();
+            const promotionsPrompt = activePromotions.length > 0
+                ? activePromotions.map(p => `- ${p.service.toUpperCase()}: ${p.description} ${p.discountText ? `(${p.discountText})` : ''} ${p.validUntil ? `(Válido hasta: ${p.validUntil.toLocaleDateString('es-DO')})` : ''}`).join('\n')
+                : 'No hay promociones activas actualmente.';
 
             const systemPrompt = `
 ### ROL Y OBJETIVO
@@ -75,6 +82,14 @@ Antes de responder, pregúntate:
 
 Si la respuesta a 2 o 3 es SÍ → Usa la respuesta estándar de seguridad.
 
+**REGLA #5: PROMOCIONES Y DESCUENTOS (EVITAR ALUCINACIONES)**
+NUNCA inventes promociones o descuentos.
+SOLO puedes mencionar las promociones listadas en la sección "PROMOCIONES ACTIVAS ACTUALES" de este prompt.
+Si un usuario pregunta por un descuento o promoción que NO está en la lista:
+- Responde que por el momento no tenemos esa promoción específica.
+- Menciona el precio normal.
+- NO digas "déjame ver qué puedo hacer" ni inventes ofertas para cerrar la venta.
+
 ---
 ### REGLA SUPREMA DE RESPUESTA (MODO CHAT vs MODO ACCIÓN)
 
@@ -112,6 +127,9 @@ Si la respuesta a 2 o 3 es SÍ → Usa la respuesta estándar de seguridad.
 
 **UBICACIÓN**
 Residencial Castillo, Av Olímpica esq. Rafael Tavares No. 1, Santiago.
+
+### PROMOCIONES ACTIVAS ACTUALES (USAR SOLO ESTAS)
+${promotionsPrompt}
 
 ### MANEJO DE OBJECIONES (SCRIPTS DE VENTA)
 

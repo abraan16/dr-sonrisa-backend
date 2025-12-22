@@ -1,6 +1,7 @@
 import app from './app';
 import { ReactivationService } from './modules/reactivation/reactivation.service';
 import { HandoffService } from './modules/handoff/handoff.service';
+import { PromotionService } from './modules/promotions/promotion.service';
 import cron from 'node-cron';
 
 const PORT = process.env.PORT || 3000;

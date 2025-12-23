@@ -5,6 +5,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PromotionService } from '../promotions/promotion.service';
 import { AlertService } from '../alert/alert.service';
+import { SettingsService } from '../settings/settings.service';
 
 export class ManagerService {
 
@@ -95,6 +96,22 @@ export class ManagerService {
                                 endDate: { type: 'string', description: 'End date (ISO format or YYYY-MM-DD)' }
                             },
                             required: ['action']
+                        }
+                    }
+                },
+                {
+                    type: 'function',
+                    function: {
+                        name: 'manage_settings',
+                        description: 'View or update clinic settings (prices, hours, location)',
+                        parameters: {
+                            type: 'object',
+                            properties: {
+                                action: { type: 'string', enum: ['get', 'update'], description: 'Action to perform' },
+                                key: { type: 'string', enum: ['prices', 'hours', 'location'], description: 'Setting key to manage' },
+                                value: { type: 'string', description: 'New text content for the setting' }
+                            },
+                            required: ['action', 'key']
                         }
                     }
                 }
@@ -202,6 +219,20 @@ Analiza la pregunta del admin y usa la herramienta apropiada.
                         } else if (functionArgs.action === 'deactivate') {
                             await AlertService.deactivateAlert(functionArgs.message);
                             finalResponse = `✅ *Aviso Desactivado* (si se encontró coincidencia)`;
+                        }
+                        break;
+
+                    case 'manage_settings':
+                        if (functionArgs.action === 'get') {
+                            const value = await SettingsService.get(functionArgs.key);
+                            finalResponse = `⚙️ *Configuración Actual: ${functionArgs.key.toUpperCase()}*\n\n${value}`;
+                        } else if (functionArgs.action === 'update') {
+                            if (!functionArgs.value) {
+                                finalResponse = '❌ Debes proporcionar el nuevo texto para actualizar.';
+                            } else {
+                                await SettingsService.set(functionArgs.key, functionArgs.value);
+                                finalResponse = `✅ *Configuración Actualizada*\n\nSe ha guardado la nueva información para: ${functionArgs.key}`;
+                            }
                         }
                         break;
 

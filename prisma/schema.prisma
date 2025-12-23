@@ -89,3 +89,13 @@ model ClinicAlert {
 
   @@map("clinic_alerts")
 }
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique // e.g., 'prices', 'hours', 'location'
+  value       String   // The content text
+  description String?  // Admin-friendly description
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
+}

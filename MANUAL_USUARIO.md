@@ -518,7 +518,32 @@ Manager AI detectará automáticamente si es un Cierre o una Advertencia basánd
 
 ---
 
-## ⚙️ Configuración y Variables de Entorno
+## ⚙️ Configuración Dinámica del Negocio (Precios, Horarios, Info)
+
+### Descripción
+Este módulo te permite actualizar **precios, horarios o ubicación** al instante, sin depender de un programador. Si cambias el precio de la limpieza, solo se lo dices a Manager AI y Diana ofrecerá el nuevo precio inmediatamente.
+
+### Secciones Modificables
+1. **prices** (Precios)
+2. **hours** (Horarios)
+3. **location** (Ubicación)
+
+### Cómo usarlo (Comandos)
+
+**Ver configuración actual:**
+- "Dime qué precios tiene Diana"
+- "Ver horarios configurados"
+- "Múestrame la ubicación actual"
+
+**Actualizar información:**
+- "Cambia los precios. Ahora la limpieza cuesta 1500 y el blanqueamiento 3000. Lo demás déjalo igual."
+- "Actualiza el horario. Ahora los sábados cerramos a las 4 PM."
+
+**Nota:** Al actualizar, Manager AI sobrescribe la sección completa con lo que le digas. **Asegúrate de ser detallado.**
+
+---
+
+## 🛠️ Variables de Entorno y Configuración Técnica
 
 ### Variables Requeridas
 

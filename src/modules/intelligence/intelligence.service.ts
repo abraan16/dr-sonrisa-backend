@@ -4,6 +4,7 @@ import openai from '../../config/openai';
 import { MemoryService } from './memory.service';
 import { SchedulerService } from '../scheduler/scheduler.service';
 import { PromotionService } from '../promotions/promotion.service';
+import { AlertService } from '../alert/alert.service';
 
 export class IntelligenceService {
 
@@ -22,6 +23,16 @@ export class IntelligenceService {
             const promotionsPrompt = activePromotions.length > 0
                 ? activePromotions.map(p => `- ${p.service.toUpperCase()}: ${p.description} ${p.discountText ? `(${p.discountText})` : ''} ${p.validUntil ? `(Válido hasta: ${p.validUntil.toLocaleDateString('es-DO')})` : ''}`).join('\n')
                 : 'No hay promociones activas actualmente.';
+
+            // 1.8. Get Active Alerts
+            const activeAlerts = await AlertService.getActiveAlerts();
+            const alertsPrompt = activeAlerts.length > 0
+                ? activeAlerts.map(a => {
+                    if (a.type === 'closure') return `⛔ CIERRE (BLOQUEO TOTAL): ${a.message} (Desde: ${a.startDate.toLocaleDateString('es-DO')} Hasta: ${a.endDate.toLocaleDateString('es-DO')}). PROHIBIDO AGENDAR EN ESTAS FECHAS.`;
+                    if (a.type === 'warning') return `⚠️ AVISO IMPORTANTE: ${a.message} (Mencionar antes de agendar).`;
+                    return `ℹ️ INFO: ${a.message}.`;
+                }).join('\n')
+                : 'No hay avisos operativos.';
 
             const systemPrompt = `
 ### ROL Y OBJETIVO
@@ -90,6 +101,15 @@ Si un usuario pregunta por un descuento o promoción que NO está en la lista:
 - Menciona el precio normal.
 - NO digas "déjame ver qué puedo hacer" ni inventes ofertas para cerrar la venta.
 
+**REGLA #6: AVISOS OPERATIVOS Y CIERRES (CRÍTICO)**
+Revisa la sección "AVISOS OPERATIVOS" abajo.
+- Si hay un **CIERRE (BLOQUEO TOTAL)**:
+  - NO PUEDES agendar citas dentro de las fechas indicadas.
+  - Si el usuario pide cita en esas fechas, rechazala amablemente explicando la razón (el mensaje del aviso).
+  - Ofrece fechas posteriores al cierre.
+- Si hay un **AVISO IMPORTANTE**:
+  - Debes mencionarlo ANTES de confirmar la cita para asegurar que el usuario esté enterado.
+
 ---
 ### REGLA SUPREMA DE RESPUESTA (MODO CHAT vs MODO ACCIÓN)
 
@@ -130,6 +150,9 @@ Residencial Castillo, Av Olímpica esq. Rafael Tavares No. 1, Santiago.
 
 ### PROMOCIONES ACTIVAS ACTUALES (USAR SOLO ESTAS)
 ${promotionsPrompt}
+
+### AVISOS OPERATIVOS (CIERRES Y ALERTAS)
+${alertsPrompt}
 
 ### MANEJO DE OBJECIONES (SCRIPTS DE VENTA)
 

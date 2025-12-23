@@ -477,6 +477,44 @@ Una vez guardada, Diana **automáticamente** empezará a mencionarla cuando un p
 |--------|---------------------|
 | Listar promociones | "Ver promociones activas" o "Qué promociones hay" |
 | Desactivar promo | "Desactiva promoción de blanqueamiento" |
+| Desactivar promo | "Desactiva promoción de blanqueamiento" |
+
+---
+
+## 🔔 Gestión de Avisos Operativos (Feriados, Cierres, Noticias)
+
+### Descripción
+Este sistema permite al administrador informar a Diana sobre cierres de la clínica (vacaciones, feriados) o avisos importantes (remodelaciones, fallas técnicas) para que **ella maneje las citas correctamente**.
+
+### Tipos de Avisos
+
+1. **🔴 CIERRE (Block Dates):**
+   - **Efecto:** Diana sabe que la clínica está CERRADA. **Rechaza cualquier solicitud de cita en esas fechas** y ofrece fechas posteriores.
+   - **Ejemplo:** "Estaremos cerrados por vacaciones del 24 al 26 de diciembre".
+
+2. **🟡 ADVERTENCIA (Warning):**
+   - **Efecto:** Diana acepta citas pero **menciona el aviso** antes de confirmar.
+   - **Ejemplo:** "El parqueo está en remodelación esta semana".
+
+3. **🔵 INFORMACIÓN (Info):**
+   - **Efecto:** Diana lo tiene en su conocimiento general.
+
+### Cómo usarlo (Comandos)
+
+**Agregar Aviso:**
+- "Avisa que la clínica estará cerrada el viernes por inventario"
+- "Agrega un cierre por vacaciones del 24 de diciembre al 2 de enero"
+- "Pon una advertencia: No tendremos luz mañana de 2 a 4 PM"
+
+Manager AI detectará automáticamente si es un Cierre o una Advertencia basándose en tu mensaje.
+
+**Listar Avisos Activos:**
+- "Ver avisos activos"
+- "¿Qué cierres tenemos programados?"
+
+**Eliminar Aviso:**
+- "Borra el aviso del inventario"
+- "Desactiva la alerta de vacaciones"
 
 ---
 

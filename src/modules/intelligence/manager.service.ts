@@ -4,6 +4,7 @@ import { OutputService } from '../output/output.service';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PromotionService } from '../promotions/promotion.service';
+import { AlertService } from '../alert/alert.service';
 
 export class ManagerService {
 
@@ -74,6 +75,24 @@ export class ManagerService {
                                 description: { type: 'string', description: 'Detailed promotion text' },
                                 discountText: { type: 'string', description: 'Short discount tag (e.g., 20% OFF)' },
                                 validUntil: { type: 'string', description: 'Expiration date (ISO format or YYYY-MM-DD)' }
+                            },
+                            required: ['action']
+                        }
+                    }
+                },
+                {
+                    type: 'function',
+                    function: {
+                        name: 'manage_alerts',
+                        description: 'Manage clinic alerts (closures, warnings, info)',
+                        parameters: {
+                            type: 'object',
+                            properties: {
+                                action: { type: 'string', enum: ['add', 'list', 'deactivate'], description: 'Action to perform' },
+                                type: { type: 'string', enum: ['closure', 'warning', 'info'], description: 'Type of alert' },
+                                message: { type: 'string', description: 'Alert message' },
+                                startDate: { type: 'string', description: 'Start date (ISO format or YYYY-MM-DD)' },
+                                endDate: { type: 'string', description: 'End date (ISO format or YYYY-MM-DD)' }
                             },
                             required: ['action']
                         }
@@ -165,6 +184,24 @@ Analiza la pregunta del admin y usa la herramienta apropiada.
                         } else if (functionArgs.action === 'deactivate') {
                             await PromotionService.deactivatePromotion(functionArgs.service);
                             finalResponse = `✅ *Promoción Desactivada* para "${functionArgs.service}"`;
+                        }
+                        break;
+
+                    case 'manage_alerts':
+                        if (functionArgs.action === 'add') {
+                            const alert = await AlertService.createAlert({
+                                type: functionArgs.type || 'info',
+                                message: functionArgs.message,
+                                startDate: functionArgs.startDate ? new Date(functionArgs.startDate) : new Date(),
+                                endDate: functionArgs.endDate ? new Date(functionArgs.endDate) : new Date(new Date().setHours(23, 59, 59, 999))
+                            });
+                            finalResponse = `✅ *Aviso Registrado*\n\nTipo: ${alert.type.toUpperCase()}\nMensaje: ${alert.message}\nDel: ${alert.startDate.toLocaleDateString('es-DO')}\nAl: ${alert.endDate.toLocaleDateString('es-DO')}`;
+                        } else if (functionArgs.action === 'list') {
+                            const alerts = await AlertService.getActiveAlerts();
+                            finalResponse = this.formatAlertsList(alerts);
+                        } else if (functionArgs.action === 'deactivate') {
+                            await AlertService.deactivateAlert(functionArgs.message);
+                            finalResponse = `✅ *Aviso Desactivado* (si se encontró coincidencia)`;
                         }
                         break;
 
@@ -297,6 +334,25 @@ Analiza la pregunta del admin y usa la herramienta apropiada.
                 msg += `   Vence: ${new Date(p.validUntil).toLocaleDateString('es-DO')}\n`;
             }
             msg += `\n`;
+        });
+
+        return msg.trim();
+    }
+
+    /**
+     * FORMAT ALERTS LIST
+     */
+    private static formatAlertsList(alerts: any[]): string {
+        if (alerts.length === 0) {
+            return `🔔 No hay avisos operativos activos.`;
+        }
+
+        let msg = `🔔 *Avisos Operativos Activos*\n\n`;
+
+        alerts.forEach((a, idx) => {
+            const icon = a.type === 'closure' ? '🔴' : a.type === 'warning' ? '🟡' : '🔵';
+            msg += `${idx + 1}. ${icon} *${a.type.toUpperCase()}* - ${a.message}\n`;
+            msg += `   📅 ${new Date(a.startDate).toLocaleDateString('es-DO')} al ${new Date(a.endDate).toLocaleDateString('es-DO')}\n\n`;
         });
 
         return msg.trim();

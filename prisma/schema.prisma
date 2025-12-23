@@ -76,3 +76,16 @@ model Promotion {
 
   @@map("promotions")
 }
+
+model ClinicAlert {
+  id        String   @id @default(uuid())
+  type      String   // 'closure', 'warning', 'info'
+  message   String
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("clinic_alerts")
+}

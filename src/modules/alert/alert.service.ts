@@ -1,32 +1,70 @@
-import axios from 'axios';
+import prisma from '../../database/prisma';
+
+export interface AlertData {
+    type: 'closure' | 'warning' | 'info';
+    message: string;
+    startDate: Date;
+    endDate: Date;
+}
 
 export class AlertService {
-    private static botToken = process.env.TELEGRAM_BOT_TOKEN;
-    private static chatId = process.env.TELEGRAM_ALERT_CHAT_ID;
 
-    static async sendAlert(message: string) {
-        if (!this.botToken || !this.chatId) {
-            console.warn('Telegram credentials not set. Alert not sent.');
-            return;
-        }
-
+    /**
+     * Create or update a clinic alert
+     */
+    static async createAlert(data: AlertData) {
         try {
-            await axios.post(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
-                chat_id: this.chatId,
-                text: message,
-                parse_mode: 'Markdown'
+            return await prisma.clinicAlert.create({
+                data: {
+                    type: data.type,
+                    message: data.message,
+                    startDate: data.startDate,
+                    endDate: data.endDate,
+                    isActive: true
+                }
             });
-            console.log('Alert sent to Telegram');
         } catch (error) {
-            console.error('Error sending Telegram alert:', error);
+            console.error('[AlertService] Error creating alert:', error);
+            throw error;
         }
     }
 
-    static async notifyOpportunity(patientName: string, score: number) {
-        await this.sendAlert(`🚨 *Oportunidad Detectada*\nPaciente: ${patientName}\nScore: ${score}\n_Requiere atención inmediata._`);
+    /**
+     * Get all active alerts for current context
+     */
+    static async getActiveAlerts() {
+        try {
+            const now = new Date();
+            return await prisma.clinicAlert.findMany({
+                where: {
+                    isActive: true,
+                    startDate: { lte: now },
+                    endDate: { gte: now }
+                },
+                orderBy: { createdAt: 'desc' }
+            });
+        } catch (error) {
+            console.error('[AlertService] Error getting active alerts:', error);
+            return [];
+        }
     }
 
-    static async notifyConversion(patientName: string, date: string) {
-        await this.sendAlert(`✅ *Nueva Cita Agendada*\nPaciente: ${patientName}\nFecha: ${date}\n🎉`);
+    /**
+     * Deactivate an alert by ID or content
+     */
+    static async deactivateAlert(messageSnippet: string) {
+        try {
+            await prisma.clinicAlert.updateMany({
+                where: {
+                    message: { contains: messageSnippet, mode: 'insensitive' },
+                    isActive: true
+                },
+                data: { isActive: false }
+            });
+            return true;
+        } catch (error) {
+            console.error('[AlertService] Error deactivating alert:', error);
+            return false;
+        }
     }
 }

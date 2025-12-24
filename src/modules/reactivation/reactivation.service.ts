@@ -2,21 +2,43 @@ import cron from 'node-cron';
 import prisma from '../../database/prisma';
 import { OutputService } from '../output/output.service';
 import openai from '../../config/openai';
+import { SettingsService } from '../settings/settings.service';
 
 export class ReactivationService {
 
     static init() {
         console.log('[Reactivation] Initializing lead follow-up system...');
 
-        // Daily sweep at 10:00 AM (Santo Domingo time)
-        cron.schedule('0 10 * * *', async () => {
-            console.log('[Reactivation] Running daily sweep at 10:00 AM...');
-            await this.runDailySweep();
+        // Check every hour (at minute 0)
+        cron.schedule('0 * * * *', async () => {
+            const now = new Date();
+            const currentHour = now.toLocaleString('es-DO', {
+                timeZone: 'America/Santo_Domingo',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+
+            // Get configured time or default to 10:00 (for sweep) or 22:00 (for report)
+            // Ideally we separate sweep and report, but for now let's keep it simple:
+            // The daily sweep sends the report at the end.
+            const scheduledTime = await SettingsService.get('notification_time');
+
+            // Check if current HH:MM matches scheduled HH:MM (ignoring small drifts)
+            // Since cron runs at minute 0, we check if scheduledTime starts with currentHour's hour part
+            // But better: strict match
+
+            console.log(`[Reactivation] Hourly check. Current: ${currentHour}, Scheduled: ${scheduledTime}`);
+
+            if (currentHour === scheduledTime) {
+                console.log('[Reactivation] Time match! Running daily sweep...');
+                await this.runDailySweep();
+            }
         }, {
             timezone: 'America/Santo_Domingo'
         });
 
-        console.log('[Reactivation] Cron job scheduled for 10:00 AM daily (America/Santo_Domingo)');
+        console.log('[Reactivation] Dynamic Cron Job Scheduler initialized (Hourly Check)');
     }
 
     static async runDailySweep() {
@@ -224,14 +246,20 @@ Responde SOLO con el mensaje, sin comillas ni explicaciones.
     /**
      * 📊 SEND EXECUTIVE SUMMARY TO OWNER
      */
+    /**
+     * 📊 SEND EXECUTIVE SUMMARY TO OWNER & STAFF
+     */
     private static async sendOwnerSummary(contactedLeads: any[]) {
         try {
-            const ownerPhone = process.env.OWNER_WHATSAPP_NUMBER;
+            // Support multiple phones (comma separated)
+            const envPhones = process.env.NOTIFICATION_PHONES || process.env.OWNER_WHATSAPP_NUMBER;
 
-            if (!ownerPhone) {
-                console.warn('[Reactivation] OWNER_WHATSAPP_NUMBER not configured');
+            if (!envPhones) {
+                console.warn('[Reactivation] No NOTIFICATION_PHONES or OWNER_WHATSAPP_NUMBER configured');
                 return;
             }
+
+            const phones = envPhones.split(',').map(p => p.trim()).filter(p => p.length > 0);
 
             const dateParams: Intl.DateTimeFormatOptions = {
                 timeZone: 'America/Santo_Domingo',
@@ -258,8 +286,13 @@ Responde SOLO con el mensaje, sin comillas ni explicaciones.
             message += `🔄 *Próximo seguimiento*: Mañana a las 10:00 AM\n\n`;
             message += `💡 Los leads que no respondan después de 2 intentos serán marcados como "detenidos" para revisión manual.`;
 
-            await OutputService.sendMessage(ownerPhone, message);
-            console.log('[Reactivation] Executive summary sent to owner');
+            console.log(`[Reactivation] Sending summary to ${phones.length} recipients...`);
+
+            for (const phone of phones) {
+                await OutputService.sendMessage(phone, message);
+            }
+
+            console.log('[Reactivation] Executive summary sent successfully.');
 
         } catch (error) {
             console.error('[Reactivation] Error sending owner summary:', error);

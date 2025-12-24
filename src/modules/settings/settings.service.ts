@@ -16,7 +16,24 @@ const DEFAULTS: Record<string, string> = {
 - Domingos: CERRADO`,
 
     location: `**UBICACIÓN**
-Residencial Castillo, Av Olímpica esq. Rafael Tavares No. 1, Santiago.`
+Residencial Castillo, Av Olímpica esq. Rafael Tavares No. 1, Santiago.`,
+
+    doctor_info: `**INFORMACIÓN DEL DOCTOR/A Y CLÍNICA**
+Clínica Dental Dra. Yasmin Pacheco.
+Dra. Yasmin Pacheco: Odontóloga especialista en Ortodoncia y Estética Dental.`,
+
+    payment_methods: `**MÉTODOS DE PAGO**
+- Efectivo (Pesos y Dólares)
+- Transferencia Bancaria
+- Aceptamos Seguros: Humano, Palic, Universal (Previa autorización).`,
+
+    notification_time: '22:00', // Default 10 PM
+
+    marketing_style: `**ESTILO DE COMUNICACIÓN Y PERSONALIDAD**
+- Tono: Profesional pero cercano y empático.
+- Estilo: Persuasivo, enfocado en beneficios.
+- Emojis: Usa emojis sutiles para dar calidez (🦷, ✨, 📅).
+- Trato: Usa "Usted" por defecto, pero adapta si el usuario es muy informal.`
 };
 
 export class SettingsService {
@@ -59,6 +76,9 @@ export class SettingsService {
         const prices = await this.get('prices');
         const hours = await this.get('hours');
         const location = await this.get('location');
+        const doctorInfo = await this.get('doctor_info');
+        const paymentMethods = await this.get('payment_methods');
+        const marketingStyle = await this.get('marketing_style');
 
         return `
 ${prices}
@@ -66,6 +86,13 @@ ${prices}
 ${hours}
 
 ${location}
+
+${doctorInfo}
+
+${paymentMethods}
+
+${marketingStyle}
 `.trim();
+        `.trim();
     }
 }

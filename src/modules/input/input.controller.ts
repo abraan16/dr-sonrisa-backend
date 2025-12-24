@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { InputService } from './input.service';
+import { TelegramService } from '../notifications/telegram.service';
 
 export class InputController {
 
@@ -36,11 +37,15 @@ export class InputController {
                     messageType === 'extendedTextMessage' ? data.message?.extendedTextMessage :
                         messageType === 'audioMessage' ? data.message?.audioMessage :
                             data.message
-            }).catch(err => console.error('Error processing message:', err));
+            }).catch(async err => {
+                console.error('Error processing message:', err);
+                await TelegramService.notifyError('InputService.processMessage', err);
+            });
 
             return res.status(200).json({ status: 'received' });
         } catch (error) {
             console.error('Error in webhook:', error);
+            TelegramService.notifyError('InputController.handleWebhook', error);
             return res.status(500).send('Internal Server Error');
         }
     }

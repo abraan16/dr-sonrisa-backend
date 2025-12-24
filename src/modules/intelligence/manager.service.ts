@@ -108,7 +108,7 @@ export class ManagerService {
                             type: 'object',
                             properties: {
                                 action: { type: 'string', enum: ['get', 'update'], description: 'Action to perform' },
-                                key: { type: 'string', enum: ['prices', 'hours', 'location'], description: 'Setting key to manage' },
+                                key: { type: 'string', enum: ['prices', 'hours', 'location', 'doctor_info', 'payment_methods', 'notification_time', 'marketing_style'], description: 'Setting key to manage' },
                                 value: { type: 'string', description: 'New text content for the setting' }
                             },
                             required: ['action', 'key']
@@ -135,6 +135,20 @@ HERRAMIENTAS DISPONIBLES:
 - search_patient: Buscar paciente
 - get_appointments: Agenda próxima
 - get_recent_activity: Actividad reciente
+- manage_settings / promotions / alerts: Gestión
+
+MANEJO DE DUDAS (IMPORTANTE):
+Si el input es un saludo ("Hola"), "Ayuda", "¿Qué haces?" o no es claro:
+NO llames herramientas. Responde **SOLO** con esta lista exacta:
+
+**Comandos Disponibles:**
+1. 📊 **Métricas:** "Resumen de hoy"
+2. 🔍 **Pacientes:** "Busca a Pedro"
+3. 📅 **Agenda:** "Citas de mañana"
+4. 🏷️ **Promos:** "Nueva promo..."
+5. 🔔 **Avisos:** "Avisa cierre..."
+6. ⚙️ **Config:** "Cambia precios..."
+7. 🎭 **Estilo:** "Cambia personalidad a más formal..."
 
 Analiza la pregunta del admin y usa la herramienta apropiada.
 `;
@@ -250,9 +264,10 @@ Analiza la pregunta del admin y usa la herramienta apropiada.
 
             return finalResponse;
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('[Manager] Error handling admin query:', error);
-            await OutputService.sendMessage(patient.phone, '❌ Error procesando consulta.');
+            const errorMsg = error.message || JSON.stringify(error);
+            await OutputService.sendMessage(patient.phone, `❌ Error procesando consulta: ${errorMsg}`);
             return null;
         }
     }

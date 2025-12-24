@@ -7,12 +7,17 @@ import { PromotionService } from '../promotions/promotion.service';
 import { AlertService } from '../alert/alert.service';
 import { SettingsService } from '../settings/settings.service';
 import { MetaService } from '../marketing/meta.service';
+import { MemoryService } from './memory.service';
+import prisma from '../../database/prisma';
 
 export class ManagerService {
 
     static async handleAdminQuery(patient: any, query: string, instanceName?: string) {
         try {
             console.log(`[Manager] Processing admin query from ${patient.phone}: "${query}"`);
+
+            // Load history for context
+            const history = await MemoryService.getContext(patient.id, 10);
 
             // Define tools for Manager AI
             const tools: any[] = [
@@ -158,11 +163,12 @@ MANEJO DE DUDAS:
 Si el input no es claro, responde con el menú de comandos disponibles.
 `;
 
-            // First LLM call to determine which tool to use
+            // Main AI call
             const completion = await openai.chat.completions.create({
                 model: 'gpt-3.5-turbo',
                 messages: [
                     { role: 'system', content: systemPrompt },
+                    ...history,
                     { role: 'user', content: query }
                 ],
                 tools: tools,
@@ -279,6 +285,15 @@ Si el input no es claro, responde con el menú de comandos disponibles.
                 // No tool needed, direct response
                 finalResponse = responseMessage.content || 'Sin respuesta.';
             }
+
+            // Save assistant response to DB
+            await prisma.interaction.create({
+                data: {
+                    patientId: patient.id, // Using the admin's patient ID for history
+                    role: 'assistant',
+                    content: finalResponse
+                }
+            });
 
             // Send response to admin
             await OutputService.sendMessage(patient.phone, finalResponse, instanceName);

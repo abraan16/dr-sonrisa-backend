@@ -9,6 +9,15 @@ export class SchedulerService {
 
     static async checkAvailability(date: Date) {
         try {
+            // Holiday Guardrail: Closed until Jan 7, 2026
+            const holidayStart = new Date('2025-12-24T00:00:00');
+            const holidayEnd = new Date('2026-01-07T23:59:59');
+
+            if (date >= holidayStart && date <= holidayEnd) {
+                console.log(`[Scheduler] Date ${date.toISOString()} is within holiday range. Returning 0 slots.`);
+                return [];
+            }
+
             const start = setHours(startOfDay(date), this.WORK_START_HOUR);
             const end = setHours(startOfDay(date), this.WORK_END_HOUR);
 

@@ -27,11 +27,14 @@ export class InputController {
                 return res.status(200).send('No JID found');
             }
 
+            const instanceName = body.instance;
+
             // Async processing
             InputService.processMessage({
                 remoteJid,
                 pushName,
                 messageType,
+                instanceName,
                 fromMe: data.key?.fromMe || false, // Detect if message is from receptionist
                 content: messageType === 'conversation' ? data.message?.conversation :
                     messageType === 'extendedTextMessage' ? data.message?.extendedTextMessage :

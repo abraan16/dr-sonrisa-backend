@@ -13,9 +13,10 @@ export class OutputService {
         return process.env.EVOLUTION_INSTANCE_NAME;
     }
 
-    static async sendMessage(phone: string, text: string) {
+    static async sendMessage(phone: string, text: string, instanceName?: string) {
         try {
-            const url = `${this.baseUrl}/message/sendText/${this.instanceName}`;
+            const finalInstance = instanceName || this.instanceName;
+            const url = `${this.baseUrl}/message/sendText/${finalInstance}`;
 
             // Evolution API expects remoteJid or number.
             // If phone is just number, we might need to append suffix, 

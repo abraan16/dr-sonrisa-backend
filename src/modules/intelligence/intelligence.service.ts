@@ -10,7 +10,7 @@ import { MetaService } from '../marketing/meta.service';
 
 export class IntelligenceService {
 
-    static async handleInteraction(patient: any, userMessage: string) {
+    static async handleInteraction(patient: any, userMessage: string, instanceName?: string) {
         try {
             // 1. Get Context
             const history = await MemoryService.getContext(patient.id);
@@ -328,7 +328,7 @@ Datos del paciente: ${patient.name} (${patient.phone})
 
             // 5. Send back to user
             console.log(`[Diana] Response to ${patient.phone}: ${aiResponse}`);
-            await OutputService.sendMessage(patient.phone, aiResponse);
+            await OutputService.sendMessage(patient.phone, aiResponse, instanceName);
 
             return aiResponse;
 

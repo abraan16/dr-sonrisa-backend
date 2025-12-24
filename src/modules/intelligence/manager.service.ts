@@ -10,7 +10,7 @@ import { MetaService } from '../marketing/meta.service';
 
 export class ManagerService {
 
-    static async handleAdminQuery(patient: any, query: string) {
+    static async handleAdminQuery(patient: any, query: string, instanceName?: string) {
         try {
             console.log(`[Manager] Processing admin query from ${patient.phone}: "${query}"`);
 
@@ -281,14 +281,14 @@ Si el input no es claro, responde con el menú de comandos disponibles.
             }
 
             // Send response to admin
-            await OutputService.sendMessage(patient.phone, finalResponse);
+            await OutputService.sendMessage(patient.phone, finalResponse, instanceName);
 
             return finalResponse;
 
         } catch (error: any) {
             console.error('[Manager] Error handling admin query:', error);
             const errorMsg = error.message || JSON.stringify(error);
-            await OutputService.sendMessage(patient.phone, `❌ Error procesando consulta: ${errorMsg}`);
+            await OutputService.sendMessage(patient.phone, `❌ Error procesando consulta: ${errorMsg}`, instanceName);
             return null;
         }
     }

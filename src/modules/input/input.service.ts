@@ -8,6 +8,7 @@ interface MessageData {
     remoteJid: string;
     pushName: string;
     messageType: string;
+    instanceName?: string;
     fromMe: boolean; // Detect if message is from receptionist
     content: any; // content from Evolution API can be complex
 }
@@ -52,7 +53,7 @@ export class InputService {
     }
 
     static async processMessage(data: MessageData) {
-        const { remoteJid, pushName, messageType, content, fromMe } = data;
+        const { remoteJid, pushName, messageType, content, fromMe, instanceName } = data;
 
         // 1. Normalize Identity
         const patient = await this.findOrCreatePatient(remoteJid, pushName);
@@ -103,17 +104,18 @@ export class InputService {
         }
 
         // 4. Router: Admin vs Lead
-        const adminPhone = process.env.ADMIN_WHATSAPP_NUMBER;
+        const adminNumbers = (process.env.ADMIN_NUMBERS || process.env.ADMIN_WHATSAPP_NUMBER || '').split(',').map(n => n.trim());
+        const isAdmin = adminNumbers.includes(patient.phone);
 
-        if (adminPhone && patient.phone === adminPhone) {
+        if (isAdmin) {
             // Route to Manager AI (Analytics/CRM)
-            console.log(`[Input] Routing to Manager AI (Admin detected)`);
+            console.log(`[Input] Routing to Manager AI (Admin detected: ${patient.phone})`);
             const { ManagerService } = await import('../intelligence/manager.service');
-            ManagerService.handleAdminQuery(patient, textBody);
+            ManagerService.handleAdminQuery(patient, textBody, instanceName);
         } else {
             // Route to Diana (Sales/Scheduling)
             console.log(`[Input] Routing to Diana (Lead/Patient)`);
-            IntelligenceService.handleInteraction(patient, textBody);
+            IntelligenceService.handleInteraction(patient, textBody, instanceName);
         }
     }
 }

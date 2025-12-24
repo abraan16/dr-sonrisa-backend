@@ -179,41 +179,42 @@ export class ReactivationService {
 
             // Get conversation context
             const recentMessages = lead.interactions
-                .slice(0, 2)
-                .map((i: any) => `${i.role}: ${i.content}`)
+                .slice(0, 3) // Take 3 messages for better context
+                .map((i: any) => `${i.role === 'user' ? 'Paciente' : 'Diana'}: ${i.content}`)
                 .join('\n');
 
             const prompt = `
-Eres Diana, coordinadora de la Clínica Dental Dra. Yasmin Pacheco.
+Eres Diana, la Coordinadora de Pacientes de la Clínica Dental Dra. Yasmin Pacheco. 
+Tu objetivo es retomar el contacto con un paciente de forma EMPÁTICA y PERSUASIVA.
 
 CONTEXTO:
 - Paciente: ${patientName}
 - Intento de seguimiento: ${attemptNumber} de 2
-- Últimas interacciones:
-${recentMessages || 'Primera interacción'}
+- Historial reciente:
+${recentMessages || 'No hay mensajes previos, es un nuevo lead que no respondió al inicio.'}
 
-TAREA:
-Escribe un mensaje de seguimiento breve, amable y NO insistente para retomar la conversación.
+INSTRUCCIONES DE TONO:
+- Natural, corto (max 2-3 líneas), como un WhatsApp real.
+- Usa "Usted" pero con calidez.
+- ${attemptNumber === 1 ? 'Enfócate en romper el hielo. No preguntes solo "si sigue interesado", ofrece ayuda o recuerda un beneficio del tratamiento que buscaba.' : 'Enfócate en dar valor o urgencia suave. Por ejemplo, menciona que la agenda se llena o que la promo está activa.'}
 
-REGLAS:
-- Máximo 2 oraciones
-- Menciona algo específico de su conversación previa (si existe)
-- ${attemptNumber === 1 ? 'Pregunta si sigue interesado' : 'Última oportunidad, ofrece horario específico'}
-- NO uses "Hola" si ya conversaron antes
-- Usa emojis sutiles (máximo 2)
+REGLAS ESTRICTAS:
+- NO saludes con "Hola" si ya hay historial previo.
+- NO seas robótico preguntando "disponibilidad para cita" si aún no han confirmado interés.
+- Si el historial menciona un tratamiento específico (ej: Brackets, Limpieza), MENCIONALO.
+- Usa máximo 2 emojis sutiles.
 
-Responde SOLO con el mensaje, sin comillas ni explicaciones.
+Responde SOLO con el mensaje de WhatsApp.
 `;
 
             const completion = await openai.chat.completions.create({
                 model: 'gpt-3.5-turbo',
-                messages: [{ role: 'user', content: prompt }],
+                messages: [{ role: 'system', content: 'Eres una experta en ventas dentales por WhatsApp, cercana y profesional.' }, { role: 'user', content: prompt }],
                 temperature: 0.8,
-                max_tokens: 100
+                max_tokens: 150
             });
 
             return completion.choices[0].message?.content?.trim() || null;
-
         } catch (error) {
             console.error('[Reactivation] Error generating message:', error);
             return null;

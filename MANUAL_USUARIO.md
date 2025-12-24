@@ -785,9 +785,50 @@ Un lead prefiere enviar mensaje de voz en lugar de escribir.
 
 ---
 
+## 🏁 Gestión de Citas y Marketing (v1.1)
+
+### 1. Finalización de Citas y Reseñas
+Manager AI permite marcar citas como completadas, lo cual dispara un flujo de fidelización:
+- **Comando:** "Marca la cita de [Nombre] como completada"
+- **Acción:** El sistema cambia el estado del paciente de `lead` a `patient` (fidelización).
+- **Reseña:** Diana (o Manager AI) sugiere enviar un link de reseñas de Google.
+- **Link de Reseña:** Configurable dinámicamente con `review_link`.
+
+### 2. Integración con Meta Conversions API (CAPI)
+El sistema ahora envía eventos de conversión directamente a Meta para optimizar campañas publicitarias:
+- **Evento `Lead`:** Se dispara cuando un nuevo paciente contacta al bot por primera vez.
+- **Evento `Schedule`:** Se dispara cuando Diana confirma exitosamente una cita.
+- **Evento `Purchase`:** Se dispara cuando el administrador marca una cita como completada.
+
+### 3. Configuración Avanzada de Marketing
+El administrador puede gestionar el link de reseñas y los tokens de Meta:
+- "Diana, actualiza el link de reseña a: [Enlace]"
+- El sistema utiliza SHA-256 para hashear datos sensibles (como el teléfono) antes de enviarlos a Meta, garantizando la privacidad del paciente.
+
+---
+
+## 🛠️ Variables de Entorno (Actualizado)
+
+Se han añadido las siguientes variables para marketing:
+```bash
+META_ACCESS_TOKEN=EAAB... # Token de acceso de Meta
+META_PIXEL_ID=1234567890   # ID del Pixel de Meta
+```
+
+---
+
 ## 📝 Registro de Cambios
 
+### Versión 1.1 (24 de diciembre de 2025)
+**Funcionalidades Implementadas:**
+1. **Flujo de Citas Completadas:** Capacidad de Manager AI para actualizar estados de cita y paciente.
+2. **Automatización de Reseñas:** Sugerencia automática del link de Google Reviews al completar tratamiento.
+3. **Meta CAPI Integration:** Tracking de eventos `Lead`, `Schedule` y `Purchase` para optimización de ads.
+4. **Seguridad de Datos:** Hasheo SHA-256 para cumplimiento de políticas de privacidad de Meta.
+5. **Corrección de Errores:** Estabilización de las herramientas de `ManagerService`.
+
 ### Versión 1.0 (21 de diciembre de 2025)
+...
 
 **Funcionalidades Implementadas:**
 

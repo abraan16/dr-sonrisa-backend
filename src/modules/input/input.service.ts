@@ -2,6 +2,7 @@ import prisma from '../../database/prisma';
 import { AudioService } from './audio.service';
 import { IntelligenceService } from '../intelligence/intelligence.service';
 import { HandoffService } from '../handoff/handoff.service';
+import { MetaService } from '../marketing/meta.service';
 
 interface MessageData {
     remoteJid: string;
@@ -34,6 +35,9 @@ export class InputService {
                     name: pushName // Default name to pushName initially
                 }
             });
+
+            // Meta CAPI: Lead event
+            await MetaService.sendEvent('Lead', patient);
         } else {
             // Update pushName if changed (optional)
             if (pushName && patient.pushName !== pushName) {

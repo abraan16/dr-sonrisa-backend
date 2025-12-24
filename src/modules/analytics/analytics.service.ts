@@ -214,4 +214,61 @@ export class AnalyticsService {
             throw error;
         }
     }
+
+    /**
+     * ✅ GESTIÓN DE CITAS - Update appointment status
+     */
+    static async updateAppointmentStatus(appointmentId: string, status: string) {
+        try {
+            const appointment = await prisma.appointment.update({
+                where: { id: appointmentId },
+                data: { status },
+                include: { patient: true }
+            });
+
+            // If completed, update patient status to 'patient' (loyalty)
+            if (status === 'completed' && appointment.patient.status === 'lead') {
+                await prisma.patient.update({
+                    where: { id: appointment.patientId },
+                    data: { status: 'patient' }
+                });
+            }
+
+            return appointment;
+        } catch (error) {
+            console.error('[Analytics] Error updating appointment status:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 🔎 SEARCH - Find latest appointment for a patient name
+     */
+    static async findLatestAppointmentByPatient(nameOrPhone: string) {
+        try {
+            const patient = await prisma.patient.findFirst({
+                where: {
+                    OR: [
+                        { name: { contains: nameOrPhone, mode: 'insensitive' } },
+                        { phone: { contains: nameOrPhone } }
+                    ]
+                },
+                include: {
+                    appointments: {
+                        orderBy: { startTime: 'desc' },
+                        take: 1
+                    }
+                }
+            });
+
+            if (!patient || patient.appointments.length === 0) return null;
+            return {
+                appointment: patient.appointments[0],
+                patient: { name: patient.name, phone: patient.phone, id: patient.id }
+            };
+        } catch (error) {
+            console.error('[Analytics] Error finding latest appointment:', error);
+            throw error;
+        }
+    }
 }

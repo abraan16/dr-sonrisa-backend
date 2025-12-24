@@ -13,9 +13,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Basic route
+// Basic routes
 app.get('/', (req, res) => {
     res.send('Dr. Sonrisa AI Backend is running 🚀');
+});
+
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Module Routes

@@ -6,6 +6,7 @@ import { es } from 'date-fns/locale';
 import { PromotionService } from '../promotions/promotion.service';
 import { AlertService } from '../alert/alert.service';
 import { SettingsService } from '../settings/settings.service';
+import { MetaService } from '../marketing/meta.service';
 
 export class ManagerService {
 
@@ -108,10 +109,25 @@ export class ManagerService {
                             type: 'object',
                             properties: {
                                 action: { type: 'string', enum: ['get', 'update'], description: 'Action to perform' },
-                                key: { type: 'string', enum: ['prices', 'hours', 'location', 'doctor_info', 'payment_methods', 'notification_time', 'marketing_style'], description: 'Setting key to manage' },
+                                key: { type: 'string', enum: ['prices', 'hours', 'location', 'doctor_info', 'payment_methods', 'notification_time', 'marketing_style', 'review_link'], description: 'Setting key to manage' },
                                 value: { type: 'string', description: 'New text content for the setting' }
                             },
                             required: ['action', 'key']
+                        }
+                    }
+                },
+                {
+                    type: 'function',
+                    function: {
+                        name: 'update_appointment_status',
+                        description: 'Mark an appointment as completed, cancelled or scheduled',
+                        parameters: {
+                            type: 'object',
+                            properties: {
+                                query: { type: 'string', description: 'Name or phone of the patient' },
+                                status: { type: 'string', enum: ['completed', 'cancelled', 'scheduled'], description: 'New status' }
+                            },
+                            required: ['query', 'status']
                         }
                     }
                 }
@@ -135,22 +151,11 @@ HERRAMIENTAS DISPONIBLES:
 - search_patient: Buscar paciente
 - get_appointments: Agenda próxima
 - get_recent_activity: Actividad reciente
-- manage_settings / promotions / alerts: Gestión
+- manage_promotion / manage_alerts / manage_settings: Gestión administrativa
+- update_appointment_status: Cambiar estado de citas y disparar eventos de marketing
 
-MANEJO DE DUDAS (IMPORTANTE):
-Si el input es un saludo ("Hola"), "Ayuda", "¿Qué haces?" o no es claro:
-NO llames herramientas. Responde **SOLO** con esta lista exacta:
-
-**Comandos Disponibles:**
-1. 📊 **Métricas:** "Resumen de hoy"
-2. 🔍 **Pacientes:** "Busca a Pedro"
-3. 📅 **Agenda:** "Citas de mañana"
-4. 🏷️ **Promos:** "Nueva promo..."
-5. 🔔 **Avisos:** "Avisa cierre..."
-6. ⚙️ **Config:** "Cambia precios..."
-7. 🎭 **Estilo:** "Cambia personalidad a más formal..."
-
-Analiza la pregunta del admin y usa la herramienta apropiada.
+MANEJO DE DUDAS:
+Si el input no es claro, responde con el menú de comandos disponibles.
 `;
 
             // First LLM call to determine which tool to use
@@ -226,7 +231,7 @@ Analiza la pregunta del admin y usa la herramienta apropiada.
                                 startDate: functionArgs.startDate ? new Date(functionArgs.startDate) : new Date(),
                                 endDate: functionArgs.endDate ? new Date(functionArgs.endDate) : new Date(new Date().setHours(23, 59, 59, 999))
                             });
-                            finalResponse = `✅ *Aviso Registrado*\n\nTipo: ${alert.type.toUpperCase()}\nMensaje: ${alert.message}\nDel: ${alert.startDate.toLocaleDateString('es-DO')}\nAl: ${alert.endDate.toLocaleDateString('es-DO')}`;
+                            finalResponse = `✅ *Aviso Registrado*\n\nTipo: ${alert.toUpperCase()}\nMensaje: ${alert.message}\nDel: ${alert.startDate.toLocaleDateString('es-DO')}\nAl: ${alert.endDate.toLocaleDateString('es-DO')}`;
                         } else if (functionArgs.action === 'list') {
                             const alerts = await AlertService.getActiveAlerts();
                             finalResponse = this.formatAlertsList(alerts);
@@ -241,11 +246,27 @@ Analiza la pregunta del admin y usa la herramienta apropiada.
                             const value = await SettingsService.get(functionArgs.key);
                             finalResponse = `⚙️ *Configuración Actual: ${functionArgs.key.toUpperCase()}*\n\n${value}`;
                         } else if (functionArgs.action === 'update') {
-                            if (!functionArgs.value) {
-                                finalResponse = '❌ Debes proporcionar el nuevo texto para actualizar.';
+                            await SettingsService.set(functionArgs.key, functionArgs.value);
+                            finalResponse = `✅ *Configuración Actualizada*\n\nSe ha guardado la nueva información para: ${functionArgs.key}`;
+                        }
+                        break;
+
+                    case 'update_appointment_status':
+                        const searchResult = await AnalyticsService.findLatestAppointmentByPatient(functionArgs.query);
+                        if (!searchResult) {
+                            finalResponse = `❌ No se encontró el paciente o no tiene citas registradas: "${functionArgs.query}"`;
+                        } else {
+                            const { appointment, patient: targetPatient } = searchResult;
+                            await AnalyticsService.updateAppointmentStatus(appointment.id, functionArgs.status);
+
+                            if (functionArgs.status === 'completed') {
+                                const reviewLink = await SettingsService.get('review_link');
+                                finalResponse = `✅ *Cita Completada*\n\nLa cita de *${targetPatient.name}* ha sido marcada como completada.\n\n🌟 *Sugerencia:* Copia y pega este link para pedirle una reseña:\n${reviewLink}`;
+
+                                // Meta CAPI: Purchase/QualifiedLead
+                                await MetaService.sendEvent('Purchase', targetPatient);
                             } else {
-                                await SettingsService.set(functionArgs.key, functionArgs.value);
-                                finalResponse = `✅ *Configuración Actualizada*\n\nSe ha guardado la nueva información para: ${functionArgs.key}`;
+                                finalResponse = `✅ *Estado Actualizado*\n\nLa cita de *${targetPatient.name}* ahora está: *${functionArgs.status.toUpperCase()}*`;
                             }
                         }
                         break;

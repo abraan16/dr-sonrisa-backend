@@ -2,13 +2,12 @@ import prisma from '../../database/prisma';
 
 // Default Fallback Values
 const DEFAULTS: Record<string, string> = {
-    prices: `**PRECIOS OFICIALES (Pesos Dominicanos - RD$)**
-- Consulta/Valoración: RD$500 (¡Incluye Rx y Diagnóstico!)
-- Limpieza dental: RD$1,000 (Gratis con tratamiento)
-- Blanqueamiento: RD$2,500
-- Endodoncia: RD$3,500
-- Ortodoncia (Brackets): Inicial desde RD$15,000
-- Implantes: Desde RD$18,000`,
+    prices: `**PRECIOS OFICIALES (RD$)**
+- Consulta General: RD$500
+- Consulta Especializada: RD$1,000
+- Limpieza Profunda: RD$3,000 (Incluye: eliminación de cálculos dentales/placa bacteriana calcificada "piedras", profilaxis limpieza de placa blanda, diagnóstico, radiografía panorámica, plan de tratamiento y orientación de productos).
+
+*Nota: El pago de la consulta es abonado a su presupuesto si se realiza el procedimiento.*`,
 
     hours: `**HORARIOS**
 - Lunes a Viernes: 9:00 AM - 7:00 PM
@@ -33,7 +32,12 @@ Dra. Yasmin Pacheco: Odontóloga especialista en Ortodoncia y Estética Dental.`
 - Tono: Profesional pero cercano y empático.
 - Estilo: Persuasivo, enfocado en beneficios.
 - Emojis: Usa emojis sutiles para dar calidez (🦷, ✨, 📅).
-- Trato: Usa "Usted" por defecto, pero adapta si el usuario es muy informal.`
+- Trato: Usa "Usted" por defecto, pero adapta si el usuario es muy informal.`,
+
+    review_link: 'https://g.page/r/CXcY-voC2yBCEBM/review',
+
+    meta_access_token: '',
+    meta_pixel_id: ''
 };
 
 export class SettingsService {
@@ -93,6 +97,5 @@ ${paymentMethods}
 
 ${marketingStyle}
 `.trim();
-        `.trim();
     }
 }

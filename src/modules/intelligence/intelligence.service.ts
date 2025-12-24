@@ -6,6 +6,7 @@ import { SchedulerService } from '../scheduler/scheduler.service';
 import { PromotionService } from '../promotions/promotion.service';
 import { AlertService } from '../alert/alert.service';
 import { SettingsService } from '../settings/settings.service';
+import { MetaService } from '../marketing/meta.service';
 
 export class IntelligenceService {
 
@@ -292,6 +293,9 @@ Datos del paciente: ${patient.name} (${patient.phone})
                         } else if (functionName === 'book_appointment') {
                             await SchedulerService.createAppointment(patient.id, functionArgs.startTime);
                             functionResponse = JSON.stringify({ status: 'confirmed', time: functionArgs.startTime });
+
+                            // Meta CAPI: Schedule event
+                            await MetaService.sendEvent('Schedule', patient);
                         }
                     } catch (e: any) {
                         functionResponse = JSON.stringify({ error: e.message });

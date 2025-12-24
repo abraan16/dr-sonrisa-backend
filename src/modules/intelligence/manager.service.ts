@@ -231,7 +231,7 @@ Si el input no es claro, responde con el menú de comandos disponibles.
                                 startDate: functionArgs.startDate ? new Date(functionArgs.startDate) : new Date(),
                                 endDate: functionArgs.endDate ? new Date(functionArgs.endDate) : new Date(new Date().setHours(23, 59, 59, 999))
                             });
-                            finalResponse = `✅ *Aviso Registrado*\n\nTipo: ${alert.toUpperCase()}\nMensaje: ${alert.message}\nDel: ${alert.startDate.toLocaleDateString('es-DO')}\nAl: ${alert.endDate.toLocaleDateString('es-DO')}`;
+                            finalResponse = `✅ *Aviso Registrado*\n\nTipo: ${alert.type.toUpperCase()}\nMensaje: ${alert.message}\nDel: ${alert.startDate.toLocaleDateString('es-DO')}\nAl: ${alert.endDate.toLocaleDateString('es-DO')}`;
                         } else if (functionArgs.action === 'list') {
                             const alerts = await AlertService.getActiveAlerts();
                             finalResponse = this.formatAlertsList(alerts);

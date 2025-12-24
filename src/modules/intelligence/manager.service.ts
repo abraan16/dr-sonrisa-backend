@@ -114,7 +114,7 @@ export class ManagerService {
                             type: 'object',
                             properties: {
                                 action: { type: 'string', enum: ['get', 'update'], description: 'Action to perform' },
-                                key: { type: 'string', enum: ['prices', 'hours', 'location', 'doctor_info', 'payment_methods', 'notification_time', 'marketing_style', 'review_link'], description: 'Setting key to manage' },
+                                key: { type: 'string', enum: ['prices', 'hours', 'location', 'doctor_info', 'payment_methods', 'notification_time', 'marketing_style', 'review_link', 'objections'], description: 'Setting key to manage' },
                                 value: { type: 'string', description: 'New text content for the setting' }
                             },
                             required: ['action', 'key']

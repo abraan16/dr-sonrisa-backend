@@ -37,7 +37,12 @@ Dra. Yasmin Pacheco: Odontóloga especialista en Ortodoncia y Estética Dental.`
     review_link: 'https://g.page/r/CXcY-voC2yBCEBM/review',
 
     meta_access_token: '',
-    meta_pixel_id: ''
+    meta_pixel_id: '',
+
+    objections: `**MANEJO DE OBJECIONES Y CIERRE**
+- Si dicen que es caro: Explica el valor de la consulta inicial y que se abona al tratamiento.
+- Si dicen que no tienen tiempo: Menciona la rapidez de la valoración y los horarios extendidos.
+- Si dudan: Menciona que la agenda se llena rápido.`
 };
 
 export class SettingsService {
@@ -83,6 +88,7 @@ export class SettingsService {
         const doctorInfo = await this.get('doctor_info');
         const paymentMethods = await this.get('payment_methods');
         const marketingStyle = await this.get('marketing_style');
+        const objections = await this.get('objections');
 
         return `
 ${prices}
@@ -96,6 +102,8 @@ ${doctorInfo}
 ${paymentMethods}
 
 ${marketingStyle}
+
+${objections}
 `.trim();
     }
 }

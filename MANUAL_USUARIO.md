@@ -260,6 +260,7 @@ Manager AI:
 - Tiempo transcurrido
 
 **Ejemplo de respuesta:**
+**Ejemplo de respuesta:**
 ```
 🎯 Actividad Reciente
 
@@ -271,6 +272,17 @@ Manager AI:
    "Gracias, nos vemos mañana"
    hace 1 hora
 ```
+
+#### 5. Gestión del Bot (NUEVO)
+**Comando:** Escribe "Estilo" o "Configura hora"
+
+**Qué permite:**
+- Cambiar la personalidad de Diana con `marketing_style`
+- Ajustar la hora del reporte diario con `notification_time`
+
+**Ejemplos:**
+- "Cambia tu estilo a muy formal y serio"
+- "Configura el reporte diario a las 8 PM"
 
 ---
 
@@ -527,6 +539,10 @@ Este módulo te permite actualizar **precios, horarios o ubicación** al instant
 1. **prices** (Precios)
 2. **hours** (Horarios)
 3. **location** (Ubicación)
+4. **doctor_info** (Info del Doctor/Clínica)
+5. **payment_methods** (Métodos de Pago)
+6. **marketing_style** (Personalidad de Diana)
+7. **notification_time** (Hora del Reporte)
 
 ### Cómo usarlo (Comandos)
 
@@ -538,6 +554,8 @@ Este módulo te permite actualizar **precios, horarios o ubicación** al instant
 **Actualizar información:**
 - "Cambia los precios. Ahora la limpieza cuesta 1500 y el blanqueamiento 3000. Lo demás déjalo igual."
 - "Actualiza el horario. Ahora los sábados cerramos a las 4 PM."
+- "Cambia tu personalidad: Sé muy jovial, usa muchos emojis y trata de tú."
+- "Configura la hora del reporte a las 22:00."
 
 **Nota:** Al actualizar, Manager AI sobrescribe la sección completa con lo que le digas. **Asegúrate de ser detallado.**
 

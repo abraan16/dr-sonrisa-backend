@@ -24,12 +24,31 @@ Esta guía detalla los pasos técnicos para replicar el sistema de **Dr. Sonrisa
 create extension vector;
 
 -- Tablas Principales
-create table patients (...);
-create table interactions (...);
-create table appointments (...);
-create table promotions (...);
-create table clinic_alerts (...);
-create table system_settings (...);
+CREATE TABLE IF NOT EXISTS patients (...);
+CREATE TABLE IF NOT EXISTS interactions (...);
+CREATE TABLE IF NOT EXISTS appointments (...);
+CREATE TABLE IF NOT EXISTS promotions (...);
+
+-- Tablas de Configuración (CRÍTICO)
+-- Usa siempre comillas dobles para columnas con mayúsculas
+CREATE TABLE IF NOT EXISTS clinic_alerts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    type VARCHAR NOT NULL,
+    message TEXT NOT NULL,
+    "startDate" TIMESTAMP NOT NULL,
+    "endDate" TIMESTAMP NOT NULL,
+    "isActive" BOOLEAN DEFAULT true,
+    "createdAt" TIMESTAMP DEFAULT NOW(),
+    "updatedAt" TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS system_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    key VARCHAR UNIQUE NOT NULL,
+    value TEXT NOT NULL,
+    description TEXT,
+    "updatedAt" TIMESTAMP DEFAULT NOW()
+);
 ```
 
 ### 2. WhatsApp (Evolution API)
@@ -61,9 +80,14 @@ EVOLUTION_API_KEY=global-api-key
 INSTANCE_NAME=cliente_nuevo
 
 # Configuración del Negocio (Dueño)
+# Configuración del Negocio (Dueño)
 OWNER_WHATSAPP_NUMBER=18090000000 (Teléfono del Doctor)
 ADMIN_WHATSAPP_NUMBER=18090000000 (Teléfono del Doctor o Gerente)
 NOTIFICATION_PHONES="18090000000,18290000000" (Lista para reportes)
+
+# Alertas Críticas (Desarrollador)
+TELEGRAM_BOT_TOKEN="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+TELEGRAM_CHAT_ID="123456789"
 
 # Servidor
 PORT=3000
@@ -89,8 +113,14 @@ Instruye al cliente para que envíe estos comandos al bot (desde su número de A
 3. **Configurar Ubicación:**
    > "Estamos en Av. Principal #123, Ciudad de México."
 
-4. **Configurar Nombre del Doctor/Clínica (NUEVO RECOMENDADO):**
+4. **Configurar Nombre del Doctor/Clínica (NUEVO):**
    > "Configura la info del doctor: Somos la Clínica Estética 'Dra. Piel', especialista en dermatología."
+
+5. **Configurar Estilo y Personalidad (NUEVO):**
+   > "Cambia tu personalidad: Sé muy formal y usa 'Usted'. Cero emojis."
+   
+6. **Configurar Hora de Reporte (NUEVO):**
+   > "Cambia la hora de notificación a las 20:00."
 
 ---
 
@@ -98,10 +128,14 @@ Instruye al cliente para que envíe estos comandos al bot (desde su número de A
 
 - [ ] ¿El bot responde al "Hola"?
 - [ ] ¿Manager AI reconoce al número Admin?
-- [ ] ¿El reporte nocturno llega a los teléfonos configurados?
-- [ ] ¿La base de datos está guardando las interacciones?
+- [ ] ¿El reporte nocturno llega a los teléfonos configurados (`NOTIFICATION_PHONES`)?
+- [ ] ¿Las alertas de Telegram funcionan (usa `notifyDeployment` para probar)?
+- [ ] **SQL Check:** ¿Las columnas `startDate` y `endDate` en `clinic_alerts` tienen la "D" mayúscula?
 
 ## 🆘 Solución de Problemas
+
+**Error: Column 'startDate' does not exist**
+- Ejecuta el script `database/fix_schema.sql` en Supabase para corregir las mayúsculas en los nombres de las columnas.
 
 **El bot usa mi nombre personal:**
 - Cambia el `pushName` (Nombre visible) en el WhatsApp del cliente.

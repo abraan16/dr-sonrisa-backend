@@ -271,11 +271,30 @@ Datos del paciente: ${patient.name} (${patient.phone})
                                 functionResponse = JSON.stringify({ message: "No slots available for this date." });
                             }
                         } else if (functionName === 'book_appointment') {
-                            await SchedulerService.createAppointment(patient.id, functionArgs.startTime);
-                            functionResponse = JSON.stringify({ status: 'confirmed', time: functionArgs.startTime });
+                            // ENFORCE NAME CHECK: If name is same as pushName, it means it's likely the generic WhatsApp name.
+                            // We want a verified full name for the clinical record.
+                            const nameSeemsGeneric = !patient.name || patient.name === patient.pushName;
 
-                            // Meta CAPI: Schedule event
-                            await MetaService.sendEvent('Schedule', patient);
+                            if (nameSeemsGeneric) {
+                                functionResponse = JSON.stringify({
+                                    error: "REQUERIDO: Nombre completo del paciente.",
+                                    message: "Para el registro oficial de la clínica, necesitamos el nombre completo. Por favor pídale su nombre completo amablemente al paciente antes de confirmar la cita."
+                                });
+                            } else {
+                                await SchedulerService.createAppointment(patient.id, functionArgs.startTime);
+                                functionResponse = JSON.stringify({ status: 'confirmed', time: functionArgs.startTime });
+
+                                // Meta CAPI: Schedule event
+                                await MetaService.sendEvent('Schedule', patient);
+
+                                // NOTIFY ADMINS
+                                const readableDate = new Date(functionArgs.startTime).toLocaleString('es-DO', {
+                                    weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: 'numeric'
+                                });
+                                await OutputService.notifyAdmins(
+                                    `🎉 *¡NUEVA CITA AGENDADA!*\n\n👤 *Paciente:* ${patient.name}\n📞 *Teléfono:* ${patient.phone}\n⏰ *Fecha:* ${readableDate}\n\n_Diana ha enviado la información de ubicación al paciente._`
+                                );
+                            }
                         }
                     } catch (e: any) {
                         functionResponse = JSON.stringify({ error: e.message });
@@ -288,6 +307,12 @@ Datos del paciente: ${patient.name} (${patient.phone})
                         content: functionResponse,
                     });
                 }
+
+                // FORCE LOCATION INFO in final confirmation
+                messages.push({
+                    role: 'system',
+                    content: 'IMPORTANTE: En tu respuesta de confirmación, DEBES incluir la dirección exacta de la clínica y mencionar que pueden buscar "Clínica Dental Dra. Yasmin Pacheco" en Google Maps o Waze para llegar fácilmente.'
+                });
 
                 // Second Call to Client to generate natural response
                 const secondResponse = await openai.chat.completions.create({

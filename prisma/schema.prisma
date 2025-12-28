@@ -30,9 +30,14 @@ model Patient {
   handoffAt           DateTime? // When human took over
   lastHumanResponseAt DateTime? // Last time human responded
 
+  // Multi-Tenant (OPTIONAL for backward compatibility)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
   interactions Interaction[]
   appointments Appointment[]
 
+  @@index([organizationId])
   @@map("patients")
 }
 
@@ -46,6 +51,11 @@ model Interaction {
   // embedding Unsupported("vector(1536)")? // Uncomment when extension is enabled in DB
   createdAt DateTime @default(now())
 
+  // Multi-Tenant (OPTIONAL)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
   @@map("interactions")
 }
 
@@ -60,6 +70,11 @@ model Appointment {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // Multi-Tenant (OPTIONAL)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
   @@map("appointments")
 }
 
@@ -74,6 +89,11 @@ model Promotion {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // Multi-Tenant (OPTIONAL)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
   @@map("promotions")
 }
 
@@ -87,15 +107,87 @@ model ClinicAlert {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Multi-Tenant (OPTIONAL)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
   @@map("clinic_alerts")
 }
 
 model SystemSetting {
   id          String   @id @default(uuid())
-  key         String   @unique // e.g., 'prices', 'hours', 'location'
+  key         String   // e.g., 'prices', 'hours', 'location'
   value       String   // The content text
   description String?  // Admin-friendly description
   updatedAt   DateTime @updatedAt
 
+  // Multi-Tenant (OPTIONAL) - key is no longer globally unique
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  @@unique([key, organizationId]) // Unique per organization
+  @@index([organizationId])
   @@map("system_settings")
+}
+
+// ============================================
+// NEW MULTI-TENANT MODELS
+// ============================================
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique // URL-friendly identifier
+  plan      String   @default("free") // 'free', 'pro', 'enterprise'
+  status    String   @default("active") // 'active', 'suspended', 'cancelled'
+  
+  // Limits based on plan
+  maxConversations Int @default(100)
+  maxUsers         Int @default(1)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  patients         Patient[]
+  appointments     Appointment[]
+  interactions     Interaction[]
+  promotions       Promotion[]
+  alerts           ClinicAlert[]
+  settings         SystemSetting[]
+  whatsappInstances WhatsappInstance[]
+  users            OrganizationUser[]
+
+  @@map("organizations")
+}
+
+model WhatsappInstance {
+  id             String   @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  instanceName   String   @unique // Evolution API instance name
+  apiKey         String?  // Optional: if each org has their own Evolution API
+  isActive       Boolean  @default(true)
+  
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@map("whatsapp_instances")
+}
+
+model OrganizationUser {
+  id             String   @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  email          String   // User email (from Supabase Auth)
+  role           String   @default("admin") // 'admin', 'viewer'
+  
+  createdAt      DateTime @default(now())
+
+  @@unique([organizationId, email])
+  @@index([organizationId])
+  @@map("organization_users")
 }

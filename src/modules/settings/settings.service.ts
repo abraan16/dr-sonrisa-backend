@@ -54,8 +54,12 @@ export class SettingsService {
      */
     static async get(key: string): Promise<string> {
         try {
-            const setting = await prisma.systemSetting.findUnique({
-                where: { key }
+            // Query with organizationId: null for backward compatibility
+            const setting = await prisma.systemSetting.findFirst({
+                where: {
+                    key,
+                    organizationId: null
+                }
             });
             return setting?.value || DEFAULTS[key] || '';
         } catch (error) {
@@ -70,9 +74,14 @@ export class SettingsService {
     static async set(key: string, value: string, description?: string) {
         try {
             return await prisma.systemSetting.upsert({
-                where: { key },
+                where: {
+                    key_organizationId: {
+                        key,
+                        organizationId: null
+                    }
+                },
                 update: { value, description },
-                create: { key, value, description }
+                create: { key, value, description, organizationId: null }
             });
         } catch (error) {
             console.error(`[Settings] Error setting ${key}:`, error);

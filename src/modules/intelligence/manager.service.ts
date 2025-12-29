@@ -135,6 +135,57 @@ export class ManagerService {
                             required: ['query', 'status']
                         }
                     }
+                },
+                {
+                    type: 'function',
+                    function: {
+                        name: 'edit_patient',
+                        description: 'Edit patient information (name, phone, tags, status)',
+                        parameters: {
+                            type: 'object',
+                            properties: {
+                                patientId: { type: 'string', description: 'Patient ID to edit' },
+                                name: { type: 'string', description: 'New name' },
+                                phone: { type: 'string', description: 'New phone number' },
+                                tags: { type: 'array', items: { type: 'string' }, description: 'Tags to add' },
+                                status: { type: 'string', enum: ['lead', 'patient', 'stopped'], description: 'Patient status' }
+                            },
+                            required: ['patientId']
+                        }
+                    }
+                },
+                {
+                    type: 'function',
+                    function: {
+                        name: 'edit_appointment',
+                        description: 'Edit or cancel an appointment',
+                        parameters: {
+                            type: 'object',
+                            properties: {
+                                appointmentId: { type: 'string', description: 'Appointment ID' },
+                                startTime: { type: 'string', description: 'New start time (ISO format)' },
+                                status: { type: 'string', enum: ['scheduled', 'cancelled', 'completed'], description: 'Appointment status' }
+                            },
+                            required: ['appointmentId']
+                        }
+                    }
+                },
+                {
+                    type: 'function',
+                    function: {
+                        name: 'execute_query',
+                        description: 'Execute a custom database query for advanced operations (USE WITH CAUTION)',
+                        parameters: {
+                            type: 'object',
+                            properties: {
+                                operation: { type: 'string', enum: ['count', 'list', 'update', 'delete'], description: 'Type of operation' },
+                                table: { type: 'string', enum: ['patients', 'appointments', 'interactions', 'promotions', 'clinic_alerts', 'system_settings'], description: 'Table to query' },
+                                filters: { type: 'object', description: 'Filters to apply (e.g., {status: "lead"})' },
+                                updates: { type: 'object', description: 'Fields to update (only for update operation)' }
+                            },
+                            required: ['operation', 'table']
+                        }
+                    }
                 }
             ];
 
@@ -143,29 +194,37 @@ Eres el Asistente Gerencial de la Clínica Dental Dra. Yasmin Pacheco.
 
 PERSONALIDAD:
 - Ejecutivo, conciso, directo
-- PROHIBIDO: Saludos ("Hola", "Buenas"), preguntas de cortesía ("¿Algo más?")
-- OBLIGATORIO: Datos duros, formato limpio
+- PROHIBIDO: Saludos repetitivos ("Hola", "Buenas"), preguntas de cortesía innecesarias
+- OBLIGATORIO: Datos duros, formato limpio, acción inmediata
+
+CAPACIDADES COMPLETAS:
+Tienes acceso TOTAL a la base de datos para:
+- Ver y analizar métricas
+- Buscar pacientes
+- Gestionar citas (crear, modificar, cancelar, completar)
+- Administrar promociones y alertas
+- Configurar TODOS los settings de la clínica
+- Actualizar cualquier información del sistema
 
 FORMATO DE RESPUESTA:
-- Usa emojis funcionales (📊, ✅, 📅, 🔍)
+- Usa emojis funcionales (📊, ✅, 📅, 🔍, ⚙️)
 - Máximo 3 líneas por sección
 - Si hay comparativas, muestra delta (+X, -X)
+- Confirma acciones ejecutadas con mensaje claro
 
-HERRAMIENTAS DISPONIBLES:
-- get_metrics: Métricas del día/mes
-- search_patient: Buscar paciente
-- get_appointments: Agenda próxima
-- get_recent_activity: Actividad reciente
-- manage_promotion / manage_alerts / manage_settings: Gestión administrativa
-- update_appointment_status: Cambiar estado de citas y disparar eventos de marketing
+INTERPRETACIÓN INTELIGENTE:
+- Si el admin pide "cambiar X", "actualizar Y", "modificar Z" → usa la herramienta correspondiente
+- Si menciona precios, horarios, ubicación → es manage_settings
+- Si habla de promociones, descuentos → es manage_promotion
+- Si menciona cierres, vacaciones → es manage_alerts
+- Si pide datos, métricas, reportes → usa get_metrics o search_patient
 
-MANEJO DE DUDAS:
-Si el input no es claro, responde con el menú de comandos disponibles.
+NO PIDAS CONFIRMACIÓN si la instrucción es clara. EJECUTA directamente.
 `;
 
             // Main AI call
             const completion = await openai.chat.completions.create({
-                model: 'gpt-3.5-turbo',
+                model: 'gpt-4o-mini', // Upgraded from gpt-3.5-turbo for better understanding
                 messages: [
                     { role: 'system', content: systemPrompt },
                     ...history,
@@ -274,6 +333,68 @@ Si el input no es claro, responde con el menú de comandos disponibles.
                             } else {
                                 finalResponse = `✅ *Estado Actualizado*\n\nLa cita de *${targetPatient.name}* ahora está: *${functionArgs.status.toUpperCase()}*`;
                             }
+                        }
+                        break;
+
+                    case 'edit_patient':
+                        const updateData: any = {};
+                        if (functionArgs.name) updateData.name = functionArgs.name;
+                        if (functionArgs.phone) updateData.phone = functionArgs.phone;
+                        if (functionArgs.tags) updateData.tags = functionArgs.tags;
+                        if (functionArgs.status) updateData.status = functionArgs.status;
+
+                        await prisma.patient.update({
+                            where: { id: functionArgs.patientId },
+                            data: updateData
+                        });
+                        finalResponse = `✅ *Paciente Actualizado*\n\nID: ${functionArgs.patientId}\nCambios aplicados exitosamente.`;
+                        break;
+
+                    case 'edit_appointment':
+                        const apptUpdateData: any = {};
+                        if (functionArgs.startTime) {
+                            const newStart = new Date(functionArgs.startTime);
+                            apptUpdateData.startTime = newStart;
+                            apptUpdateData.endTime = new Date(newStart.getTime() + 60 * 60 * 1000); // +1 hour
+                        }
+                        if (functionArgs.status) apptUpdateData.status = functionArgs.status;
+
+                        await prisma.appointment.update({
+                            where: { id: functionArgs.appointmentId },
+                            data: apptUpdateData
+                        });
+                        finalResponse = `✅ *Cita Actualizada*\n\nID: ${functionArgs.appointmentId}\nCambios aplicados exitosamente.`;
+                        break;
+
+                    case 'execute_query':
+                        const { operation, table, filters, updates } = functionArgs;
+                        let queryResult: any;
+
+                        switch (operation) {
+                            case 'count':
+                                queryResult = await (prisma as any)[table].count({ where: filters || {} });
+                                finalResponse = `📊 *Resultado*\n\nTabla: ${table}\nTotal: ${queryResult} registros`;
+                                break;
+                            case 'list':
+                                queryResult = await (prisma as any)[table].findMany({
+                                    where: filters || {},
+                                    take: 10
+                                });
+                                finalResponse = `📋 *Primeros 10 registros de ${table}*\n\n${JSON.stringify(queryResult, null, 2).substring(0, 500)}...`;
+                                break;
+                            case 'update':
+                                queryResult = await (prisma as any)[table].updateMany({
+                                    where: filters || {},
+                                    data: updates || {}
+                                });
+                                finalResponse = `✅ *Actualización Masiva*\n\nTabla: ${table}\nRegistros afectados: ${queryResult.count}`;
+                                break;
+                            case 'delete':
+                                queryResult = await (prisma as any)[table].deleteMany({
+                                    where: filters || {}
+                                });
+                                finalResponse = `⚠️ *Eliminación Ejecutada*\n\nTabla: ${table}\nRegistros eliminados: ${queryResult.count}`;
+                                break;
                         }
                         break;
 

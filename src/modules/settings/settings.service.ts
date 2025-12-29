@@ -15,7 +15,9 @@ const DEFAULTS: Record<string, string> = {
 - Domingos: CERRADO`,
 
     location: `**UBICACIÓN**
-Residencial Castillo, Av Olímpica esq. Rafael Tavares No. 1, Santiago.`,
+Residencial Castillo, Av Olímpica esq. Rafael Tavares No. 1, Santiago.
+
+📍 Google Maps: https://maps.app.goo.gl/X29KRDA2WSQwbcDv9`,
 
     doctor_info: `**INFORMACIÓN DEL DOCTOR/A Y CLÍNICA**
 Clínica Dental Dra. Yasmin Pacheco.

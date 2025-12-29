@@ -253,7 +253,7 @@ Datos del paciente: ${patient.name} (${patient.phone})
 
             // 3. Call LLM
             const completion = await openai.chat.completions.create({
-                model: 'gpt-3.5-turbo',
+                model: 'gpt-4o-mini', // Upgraded from gpt-3.5-turbo (70% cheaper + more intelligent)
                 messages: messages,
                 temperature: 0.7,
                 tools: tools,
@@ -329,7 +329,7 @@ Datos del paciente: ${patient.name} (${patient.phone})
 
                 // Second Call to Client to generate natural response
                 const secondResponse = await openai.chat.completions.create({
-                    model: 'gpt-3.5-turbo',
+                    model: 'gpt-4o-mini',
                     messages: messages,
                 });
                 aiResponse = secondResponse.choices[0].message?.content || 'Entendido.';

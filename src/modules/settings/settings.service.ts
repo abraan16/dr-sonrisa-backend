@@ -14,8 +14,7 @@ const DEFAULTS: Record<string, string> = {
 - Sábados: 9:00 AM - 2:00 PM
 - Domingos: CERRADO`,
 
-    location: `**UBICACIÓN**
-Residencial Castillo, Av Olímpica esq. Rafael Tavares No. 1, Santiago.
+    location: `UBICACIÓN Residencial Castillo, Av Olímpica esq. Rafael Tavares No. 1, Santiago de los Caballeros.
 
 📍 Google Maps: https://maps.app.goo.gl/X29KRDA2WSQwbcDv9`,
 

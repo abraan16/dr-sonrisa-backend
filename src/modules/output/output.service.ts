@@ -42,15 +42,33 @@ export class OutputService {
     }
 
     /**
-     * Send a notification to all configured administrators
+     * Send a notification to all configured administrators.
+     * Unifies: ADMIN_NUMBERS, ADMIN_WHATSAPP_NUMBER, NOTIFICATION_PHONES, OWNER_WHATSAPP_NUMBER
      */
     static async notifyAdmins(text: string, instanceName?: string) {
-        const adminNumbers = (process.env.ADMIN_NUMBERS || process.env.ADMIN_WHATSAPP_NUMBER || '').split(',').map(n => n.trim()).filter(n => n.length > 0);
+        const envVars = [
+            process.env.ADMIN_NUMBERS,
+            process.env.ADMIN_WHATSAPP_NUMBER,
+            process.env.NOTIFICATION_PHONES,
+            process.env.OWNER_WHATSAPP_NUMBER
+        ];
 
-        console.log(`[Output] Notifying ${adminNumbers.length} admins...`);
+        // Combine all and remove duplicates
+        const allNumbers = envVars
+            .filter(v => !!v)
+            .join(',')
+            .split(',')
+            .map(n => n.trim())
+            .filter(n => n.length > 5); // Basic check for valid number length
 
-        for (const adminPhone of adminNumbers) {
-            await this.sendMessage(adminPhone, text, instanceName);
+        const uniqueNumbers = [...new Set(allNumbers)];
+
+        console.log(`[Output] Notifying ${uniqueNumbers.length} unique admins (Instance: ${instanceName || 'default'})...`);
+
+        for (const adminPhone of uniqueNumbers) {
+            // Normalize: Ensure no @s.whatsapp.net for the Evolution API 'number' field
+            const cleanNumber = adminPhone.split('@')[0];
+            await this.sendMessage(cleanNumber, text, instanceName);
         }
     }
 }

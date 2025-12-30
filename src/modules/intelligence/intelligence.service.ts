@@ -312,7 +312,8 @@ Datos del paciente: ${patient.name} (${patient.phone})
                                     weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: 'numeric'
                                 });
                                 await OutputService.notifyAdmins(
-                                    `🎉 *¡NUEVA CITA AGENDADA!*\n\n👤 *Paciente:* ${patient.name}\n📞 *Teléfono:* ${patient.phone}\n⏰ *Fecha:* ${readableDate}\n\n_Diana ha enviado la información de ubicación al paciente._`
+                                    `🎉 *¡NUEVA CITA AGENDADA!*\n\n👤 *Paciente:* ${patient.name}\n📞 *Teléfono:* ${patient.phone}\n⏰ *Fecha:* ${readableDate}\n\n_Diana ha enviado la información de ubicación al paciente._`,
+                                    instanceName
                                 );
                             }
                         }

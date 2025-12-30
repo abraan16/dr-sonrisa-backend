@@ -252,16 +252,6 @@ Responde SOLO con el mensaje de WhatsApp.
      */
     private static async sendOwnerSummary(contactedLeads: any[]) {
         try {
-            // Support multiple phones (comma separated)
-            const envPhones = process.env.NOTIFICATION_PHONES || process.env.OWNER_WHATSAPP_NUMBER;
-
-            if (!envPhones) {
-                console.warn('[Reactivation] No NOTIFICATION_PHONES or OWNER_WHATSAPP_NUMBER configured');
-                return;
-            }
-
-            const phones = envPhones.split(',').map(p => p.trim()).filter(p => p.length > 0);
-
             const dateParams: Intl.DateTimeFormatOptions = {
                 timeZone: 'America/Santo_Domingo',
                 weekday: 'long',
@@ -287,13 +277,9 @@ Responde SOLO con el mensaje de WhatsApp.
             message += `🔄 *Próximo seguimiento*: Mañana a las 10:00 AM\n\n`;
             message += `💡 Los leads que no respondan después de 2 intentos serán marcados como "detenidos" para revisión manual.`;
 
-            console.log(`[Reactivation] Sending summary to ${phones.length} recipients...`);
+            await OutputService.notifyAdmins(message);
 
-            for (const phone of phones) {
-                await OutputService.sendMessage(phone, message);
-            }
-
-            console.log('[Reactivation] Executive summary sent successfully.');
+            console.log('[Reactivation] Executive summary sent successfully via unified notification system.');
 
         } catch (error) {
             console.error('[Reactivation] Error sending owner summary:', error);

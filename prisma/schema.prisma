@@ -9,15 +9,62 @@ datasource db {
   extensions = [vector]
 }
 
+model Organization {
+  id               String             @id @default(uuid())
+  name             String
+  slug             String             @unique
+  plan             String             @default("free")
+  status           String             @default("active")
+  maxConversations Int                @default(100)
+  maxUsers         Int                @default(1)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  whatsappInstances WhatsappInstance[]
+  users            OrganizationUser[]
+  patients         Patient[]
+  appointments     Appointment[]
+  interactions     Interaction[]
+  promotions       Promotion[]
+  clinicAlerts     ClinicAlert[]
+  systemSettings   SystemSetting[]
+
+  @@map("organizations")
+}
+
+model WhatsappInstance {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  instanceName   String       @unique
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+
+  @@map("whatsapp_instances")
+}
+
+model OrganizationUser {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userId         String // External ID (Supabase Auth)
+  role           String       @default("admin")
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, userId])
+  @@map("organization_users")
+}
+
 model Patient {
-  id        String   @id @default(uuid())
-  phone     String   @unique
-  name      String?
-  pushName  String?
-  metadata  Json?
-  tags      String[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String       @id @default(uuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  phone          String       @unique
+  name           String?
+  pushName       String?
+  metadata       Json?
+  tags           String[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   // Lead Follow-up System
   status              String   @default("lead") // "lead" | "patient" | "stopped"
@@ -33,69 +80,85 @@ model Patient {
   interactions Interaction[]
   appointments Appointment[]
 
+  @@index([organizationId])
   @@map("patients")
 }
 
 model Interaction {
-  id        String   @id @default(uuid())
-  patientId String
-  patient   Patient  @relation(fields: [patientId], references: [id])
-  role      String // 'user' | 'assistant' | 'system'
-  content   String
-  mediaType String   @default("text") // 'text' | 'audio'
-  // embedding Unsupported("vector(1536)")? // Uncomment when extension is enabled in DB
-  createdAt DateTime @default(now())
+  id             String       @id @default(uuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  patientId      String
+  patient        Patient      @relation(fields: [patientId], references: [id])
+  role           String // 'user' | 'assistant' | 'system'
+  content        String
+  mediaType      String       @default("text") // 'text' | 'audio'
+  createdAt      DateTime     @default(now())
 
+  @@index([organizationId])
   @@map("interactions")
 }
 
 model Appointment {
-  id            String   @id @default(uuid())
-  patientId     String
-  patient       Patient  @relation(fields: [patientId], references: [id])
-  startTime     DateTime
-  endTime       DateTime
-  status        String   @default("scheduled") // 'scheduled', 'cancelled', 'completed'
-  googleEventId String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String       @id @default(uuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  patientId      String
+  patient        Patient      @relation(fields: [patientId], references: [id])
+  startTime      DateTime
+  endTime        DateTime
+  status         String       @default("scheduled") // 'scheduled', 'cancelled', 'completed'
+  googleEventId  String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
+  @@index([organizationId])
   @@map("appointments")
 }
 
 model Promotion {
-  id           String   @id @default(uuid())
-  service      String   // e.g., 'blanqueamiento', 'limpieza', 'general'
-  description  String   // Detailed description
-  discountText String?  // e.g., '20% OFF'
-  validFrom    DateTime?
-  validUntil   DateTime?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String       @id @default(uuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  service        String // e.g., 'blanqueamiento', 'limpieza', 'general'
+  description    String // Detailed description
+  discountText   String? // e.g., '20% OFF'
+  validFrom      DateTime?
+  validUntil     DateTime?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
+  @@index([organizationId])
   @@map("promotions")
 }
 
 model ClinicAlert {
-  id        String   @id @default(uuid())
-  type      String   // 'closure', 'warning', 'info'
-  message   String
-  startDate DateTime
-  endDate   DateTime
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String       @id @default(uuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  type           String // 'closure', 'warning', 'info'
+  message        String
+  startDate      DateTime
+  endDate        DateTime
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
+  @@index([organizationId])
   @@map("clinic_alerts")
 }
 
 model SystemSetting {
-  id          String   @id @default(uuid())
-  key         String   @unique // e.g., 'prices', 'hours', 'location'
-  value       String   // The content text
-  description String?  // Admin-friendly description
-  updatedAt   DateTime @updatedAt
+  id             String       @id @default(uuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  key            String // e.g., 'prices', 'hours', 'location'
+  value          String // The content text
+  description    String? // Admin-friendly description
+  updatedAt      DateTime     @updatedAt
 
+  @@unique([key, organizationId])
+  @@index([organizationId])
   @@map("system_settings")
 }

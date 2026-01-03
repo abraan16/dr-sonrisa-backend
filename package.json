@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",
+    "@types/pg": "^8.16.0",
     "axios": "^1.13.2",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
@@ -32,6 +33,7 @@
     "express": "^5.2.1",
     "helmet": "^8.1.0",
     "node-cron": "^4.2.1",
-    "openai": "^6.13.0"
+    "openai": "^6.13.0",
+    "pg": "^8.16.3"
   }
 }
